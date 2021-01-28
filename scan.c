@@ -8,6 +8,7 @@
 
 int lineNumber = 1; // 当前行号为 1
 int tokenLen = 0;
+TokenKind tokenKind;
 char tokenText[1024];
 
 int wantChar(FILE *fp, int want) {
@@ -18,7 +19,7 @@ int wantChar(FILE *fp, int want) {
     }
     return 1;
 }
-enum TokenKind getToken(FILE *fp) {
+TokenKind getToken(FILE *fp) {
     if (feof(fp)) {
         return ENDOFFILE;
     }
@@ -273,7 +274,7 @@ enum TokenKind getToken(FILE *fp) {
     } else {
         tokenLen = 1;
         tokenText[0] = c;
-        enum TokenKind ret = c == '.' ? FLOAT_CONST : INT_CONST;
+        TokenKind ret = c == '.' ? FLOAT_CONST : INT_CONST;
         while ((c = fgetc(fp))) {
             if (isdigit(c)) {
                 tokenText[tokenLen++] = c;
@@ -298,7 +299,7 @@ enum TokenKind getToken(FILE *fp) {
     }
 }
 
-const char * getTokenKindStr(enum TokenKind kind) {
+const char * getTokenKindStr(TokenKind kind) {
     switch (kind) {
         case ERROR_TOKEN:
             return "ERROR";

@@ -5,9 +5,41 @@
 #ifndef MINIC_FORMAT_H
 #define MINIC_FORMAT_H
 #include <stdio.h>
+#include <stdlib.h>
 
+typedef enum {
+    UNKNOWN, // 并不关心
+    EXT_DEF_LIST, // 外部定义序列
+    EXT_INCLUDE, // 外部定义 include
+} ASTType;
+
+struct astnode {
+    ASTType type;
+    int num; // 子节点个数
+    struct astnode ** son;
+    char * text;
+};
+
+typedef struct astnode AstNode;
 // 读取 fp 程序，输出格式化程序到 outfp
 void format(FILE *fp, FILE *outfp);
 
+AstNode * allocSons(AstNode *p, int n);
+
+AstNode * allocSonsWithoutMalloc(AstNode *p, int n);
+
+AstNode * setAstNodeText(AstNode *p, const char * source);
+
+AstNode * newNode();
+
+void freeNode(AstNode *p);
+
+void printNode(FILE *outfp, AstNode *p);
+
+// 处理外部定义序列
+AstNode * processExtDef(FILE *fp);
+
+// 处理外部定义序列
+AstNode * processExtDefList(FILE *fp);
 
 #endif //MINIC_FORMAT_H

@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include "main.h"
 
-enum TokenKind {
+typedef enum {
     ERROR_TOKEN,
     ENDOFFILE, // 代表结束
     IDENT, // 标识符
@@ -55,10 +55,10 @@ enum TokenKind {
     RBRACKET, // ]
     LBRACE, // {
     RBRACE, // }
-};
+} TokenKind;
 
-enum TokenKind getToken(FILE *fp);
+TokenKind getToken(FILE *fp);
 
-const char * getTokenKindStr(enum TokenKind kind);
+const char * getTokenKindStr(TokenKind kind);
 
 #endif //MINIC_SCAN_H

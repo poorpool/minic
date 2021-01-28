@@ -5,14 +5,21 @@
 
 extern int lineNumber;
 
+FILE *fp;
+FILE *outfp;
+
 void panic(const char *info) {
     fprintf(stderr, "Line %d: %s", lineNumber, info);
+    fclose(fp);
+    fclose(outfp);
     exit(0);
 }
 
 int main() {
-    FILE *fp = fopen("../files/input.txt", "r");
-    FILE *outfp = fopen("../files/output.txt", "w");
+    fp = fopen("../files/input.txt", "r");
+    outfp = fopen("../files/output.txt", "w");
     format(fp, outfp);
+    fclose(fp);
+    fclose(outfp);
     return 0;
 }
