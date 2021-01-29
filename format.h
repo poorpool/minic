@@ -12,7 +12,9 @@ typedef enum {
     UNKNOWN, // 并不关心
     EXT_DEF_LIST, // 外部定义序列
     EXT_INCLUDE, // 外部定义 include
-    EXT_VAR_LIST, // 外部变量序列（不包含类型）
+    EXT_VAR_LIST, // 外部变量序列int a, b, c;
+    FORMAL_ARG_LIST, // 形式参数序列 int a, float b, char c
+    EXT_FUN_STATEMEMT, // 外部函数声明。fun_name (
 } ASTType;
 
 struct astnode {
@@ -46,6 +48,9 @@ AstNode * processExtDefList(FILE *fp);
 
 // 处理外部变量序列
 AstNode * processExtVarList(FILE *fp, AstNode *ret, TokenKind kind);
+
+// 处理形式参数序列
+AstNode * processFormalArgList(FILE *fp, AstNode *ret, TokenKind kind);
 
 
 #endif //MINIC_FORMAT_H

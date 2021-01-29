@@ -4,3 +4,5 @@
 int a, b,c,
 d; float e, f; int ack_nie;
 char __gg;
+int fun         (int a, int b, int c)
+;

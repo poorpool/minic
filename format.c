@@ -85,6 +85,16 @@ void printExtVarList(FILE *outfp, AstNode *p) {
     }
 }
 
+void printExtFunStatement(FILE *outfp, AstNode *p) {
+    fprintf(outfp, "%s", p->son[0]->text);
+    fprintf(outfp, " %s", p->son[1]->text);
+    if (p->num == 4) {
+        fprintf(outfp, "%s", p->son[2]->text);
+        fprintf(outfp, " ");
+        printExtFunStatement(outfp, p->son[3]);
+    }
+}
+
 void printNode(FILE *outfp, AstNode *p) {
     if (p == NULL) {
         return ;
@@ -104,6 +114,16 @@ void printNode(FILE *outfp, AstNode *p) {
             printNode(outfp, p->son[0]);
             fprintf(outfp, " ");
             printExtVarList(outfp, p->son[1]);
+            fprintf(outfp, "\n");
+            break;
+        case EXT_FUN_STATEMEMT:
+            printNode(outfp, p->son[0]);
+            fprintf(outfp, " ");
+            printNode(outfp, p->son[1]->son[0]);
+            printNode(outfp, p->son[1]->son[1]);
+            printExtFunStatement(outfp, p->son[1]->son[2]);
+            printNode(outfp, p->son[1]->son[3]);
+            printNode(outfp, p->son[1]->son[4]);
             fprintf(outfp, "\n");
             break;
         default:
@@ -138,6 +158,35 @@ AstNode * processExtVarList(FILE *fp, AstNode *ret, TokenKind kind) {
     return ret;
 }
 
+// 得到、留下不是int char float的第一个kind
+AstNode * processFormalArgList(FILE *fp, AstNode *ret, TokenKind kind) {
+    printf("now kind %s\n", getTokenKindStr(kind));
+    if (kind == INT || kind == FLOAT || kind == CHAR) {
+        tokenKind = getToken(fp);
+        if (tokenKind != IDENT) {
+            panic("Confusing data type!\n");
+            return NULL;
+        }
+        strcpy(tokenTextTmp, tokenText);
+        tokenKind = getToken(fp);
+        if (tokenKind == COMMA) {
+            ret = allocSons(ret, 4);
+            ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(kind));
+            ret->son[1] = setAstNodeText(ret->son[1], tokenTextTmp);
+            ret->son[2] = setAstNodeText(ret->son[2], getTokenKindStr(COMMA));
+            tokenKind = getToken(fp);
+            ret->son[3] = processFormalArgList(fp, ret->son[3], tokenKind);
+        } else {
+            ret = allocSons(ret, 2);
+            ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(kind));
+            ret->son[1] = setAstNodeText(ret->son[1], tokenTextTmp);
+        }
+        return ret;
+    } else {
+        return NULL;
+    }
+}
+
 AstNode * processExtDef(FILE *fp) {
     tokenKind = getToken(fp);
     AstNode * ret = newNode();
@@ -170,7 +219,6 @@ AstNode * processExtDef(FILE *fp) {
         case FLOAT:
         case CHAR:
             ret = allocSons(ret, 2);
-            ret->type = EXT_VAR_LIST;
             ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(tokenKind));
             tokenKind = getToken(fp);
             if (tokenKind != IDENT) {
@@ -181,8 +229,36 @@ AstNode * processExtDef(FILE *fp) {
             strcpy(tokenTextTmp, tokenText);
             tokenKind = getToken(fp);
             if (tokenKind == COMMA || tokenKind == SEMI) {
+                ret->type = EXT_VAR_LIST;
                 ret->son[1] = processExtVarList(fp, ret->son[1], tokenKind);
                 return ret;
+            } else if (tokenKind == LP) {
+                ret->son[1] = allocSons(ret->son[1], 5);
+                ret->son[1]->son[0] = setAstNodeText(ret->son[1]->son[0], tokenTextTmp);
+                ret->son[1]->son[1] = setAstNodeText(ret->son[1]->son[1], getTokenKindStr(LP));
+                tokenKind = getToken(fp);
+                ret->son[1]->son[2] = processFormalArgList(fp, ret->son[1]->son[2], tokenKind);
+                // 这里不需要 getToken，因为 processFormalArgList 已经 get 过了
+                if (tokenKind != RP) {
+                    freeNode(ret);
+                    panic("Doesn't get a )!");
+                    return NULL;
+                }
+                ret->son[1]->son[3] = setAstNodeText(ret->son[1]->son[3], getTokenKindStr(RP));
+                tokenKind = getToken(fp);
+                if (tokenKind != SEMI) {
+                    freeNode(ret);
+                    panic("Doesn't get a ;!");
+                    return NULL;
+                } else {
+                    ret->type = EXT_FUN_STATEMEMT;
+                    ret->son[1]->son[4] = setAstNodeText(ret->son[1]->son[4], getTokenKindStr(SEMI));
+                }
+                return ret;
+            } else {
+                freeNode(ret);
+                panic("Confusing data type!\n");
+                return NULL;
             }
         default:
             panic("还没处理呢!");
