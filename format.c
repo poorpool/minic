@@ -11,6 +11,9 @@ extern int lineNumber;
 extern TokenKind tokenKind;
 extern char tokenText[];
 
+char tokenTextTmp[1024];
+
+
 AstNode *root;
 
 AstNode * allocSons(AstNode *p, int n) {
@@ -60,14 +63,26 @@ void freeNode(AstNode *p) {
     }
     if (p->text != NULL) {
         free(p->text);
+        p->text = NULL;
     }
     for (int i = 0; i < p->num; i++) {
         freeNode(p->son[i]);
+        p->son[i] = NULL;
     }
     if (p->son != NULL) {
         free(p->son);
+        p->son = NULL;
     }
     free(p);
+}
+
+void printExtVarList(FILE *outfp, AstNode *p) {
+    fprintf(outfp, "%s", p->son[0]->text);
+    fprintf(outfp, "%s", p->son[1]->text);
+    fprintf(outfp, " ");
+    if (p->num == 3) {
+        printExtVarList(outfp, p->son[2]);
+    }
 }
 
 void printNode(FILE *outfp, AstNode *p) {
@@ -85,6 +100,12 @@ void printNode(FILE *outfp, AstNode *p) {
             printNode(outfp, p->son[2]);
             fprintf(outfp, "\n");
             break;
+        case EXT_VAR_LIST:
+            printNode(outfp, p->son[0]);
+            fprintf(outfp, " ");
+            printExtVarList(outfp, p->son[1]);
+            fprintf(outfp, "\n");
+            break;
         default:
             for (int i = 0; i < p->num; i++) {
                 printNode(outfp, p->son[i]);
@@ -92,36 +113,80 @@ void printNode(FILE *outfp, AstNode *p) {
     }
 }
 
+AstNode * processExtVarList(FILE *fp, AstNode *ret, TokenKind kind) {
+    if (kind == COMMA) {
+        ret = allocSons(ret, 3);
+        ret->son[0] = setAstNodeText(ret->son[0], tokenTextTmp);
+        ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(COMMA));
+        tokenKind = getToken(fp);
+        if (tokenKind != IDENT) {
+            panic("Doesn't get an identifier!");
+            return NULL;
+        }
+        strcpy(tokenTextTmp, tokenText);
+        tokenKind = getToken(fp);
+        if (tokenKind == COMMA || tokenKind == SEMI) {
+            ret->son[2] = processExtVarList(fp, ret->son[2], tokenKind);
+            return ret;
+        }
+    } else if (tokenKind == SEMI) {
+        ret = allocSons(ret, 2);
+        ret->son[0] = setAstNodeText(ret->son[0], tokenTextTmp);
+        ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(SEMI));
+        return ret;
+    }
+    return ret;
+}
+
 AstNode * processExtDef(FILE *fp) {
     tokenKind = getToken(fp);
-    printf("get %s\n", getTokenKindStr(tokenKind));
     AstNode * ret = newNode();
     switch (tokenKind) {
         case ENDOFFILE:
             return NULL;
         case SHARP:
             tokenKind = getToken(fp);
-            printf("get %s %d\n", getTokenKindStr(tokenKind), tokenKind == INCLUDE);
             if (tokenKind == INCLUDE) {
-
                 ret->type = EXT_INCLUDE;
                 ret = allocSons(ret, 3);
                 ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(SHARP));
                 ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(INCLUDE));
-                printf("setting\n");
                 tokenKind = getToken(fp);
-                printf("get %s %s %d\n", getTokenKindStr(tokenKind), tokenText, tokenKind == STRING);
                 if (tokenKind == STRING) {
                     ret->son[2] = setAstNodeText(ret->son[2], tokenText);
-                    printf("%s\n", tokenText);
                     return ret;
                 } else {
                     freeNode(ret);
                     panic("Include doesn't complete!");
                     return NULL;
                 }
+            } else {
+                freeNode(ret);
+                panic("Confusing #!");
+                return NULL;
             }
-
+            break;
+        case INT:
+        case FLOAT:
+        case CHAR:
+            ret = allocSons(ret, 2);
+            ret->type = EXT_VAR_LIST;
+            ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(tokenKind));
+            tokenKind = getToken(fp);
+            if (tokenKind != IDENT) {
+                freeNode(ret);
+                panic("Doesn't get an identifier!");
+                return NULL;
+            }
+            strcpy(tokenTextTmp, tokenText);
+            tokenKind = getToken(fp);
+            if (tokenKind == COMMA || tokenKind == SEMI) {
+                ret->son[1] = processExtVarList(fp, ret->son[1], tokenKind);
+                return ret;
+            }
+        default:
+            panic("还没处理呢!");
+            return NULL;
     }
 }
 
@@ -129,7 +194,6 @@ AstNode * processExtDefList(FILE *fp) {
     AstNode *ret = newNode();
     ret->type = EXT_DEF_LIST;
     ret = allocSonsWithoutMalloc(ret, 2);
-    printf("okk\n");
     ret->son[0] = processExtDef(fp);
     if (ret->son[0] == NULL) {
         freeNode(ret);

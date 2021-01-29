@@ -6,11 +6,13 @@
 #define MINIC_FORMAT_H
 #include <stdio.h>
 #include <stdlib.h>
+#include "scan.h"
 
 typedef enum {
     UNKNOWN, // 并不关心
     EXT_DEF_LIST, // 外部定义序列
     EXT_INCLUDE, // 外部定义 include
+    EXT_VAR_LIST, // 外部变量序列（不包含类型）
 } ASTType;
 
 struct astnode {
@@ -41,5 +43,9 @@ AstNode * processExtDef(FILE *fp);
 
 // 处理外部定义序列
 AstNode * processExtDefList(FILE *fp);
+
+// 处理外部变量序列
+AstNode * processExtVarList(FILE *fp, AstNode *ret, TokenKind kind);
+
 
 #endif //MINIC_FORMAT_H

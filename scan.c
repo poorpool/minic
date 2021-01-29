@@ -318,7 +318,7 @@ const char * getTokenKindStr(TokenKind kind) {
         case FLOAT:
             return "float";
         case CHAR:
-            return "";
+            return "char";
         case IF:
             return "if";
         case ELSE:
