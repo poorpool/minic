@@ -76,26 +76,52 @@ void freeNode(AstNode *p) {
     free(p);
 }
 
-void printExtVarList(FILE *outfp, AstNode *p) {
+void printVarList(FILE *outfp, AstNode *p) {
     fprintf(outfp, "%s", p->son[0]->text);
     fprintf(outfp, "%s", p->son[1]->text);
     fprintf(outfp, " ");
     if (p->num == 3) {
-        printExtVarList(outfp, p->son[2]);
+        printVarList(outfp, p->son[2]);
     }
 }
 
-void printExtFunStatement(FILE *outfp, AstNode *p) {
+void printFormalArgList(FILE *outfp, AstNode *p) {
     fprintf(outfp, "%s", p->son[0]->text);
     fprintf(outfp, " %s", p->son[1]->text);
     if (p->num == 4) {
         fprintf(outfp, "%s", p->son[2]->text);
         fprintf(outfp, " ");
-        printExtFunStatement(outfp, p->son[3]);
+        printFormalArgList(outfp, p->son[3]);
     }
 }
 
-void printNode(FILE *outfp, AstNode *p) {
+void printLotsOfVarList(FILE *outfp, AstNode *p, int iden) {
+    if (p == NULL) {
+        return ;
+    }
+    printIndentation(outfp, iden);
+    printNode(outfp, p->son[0]->son[0], iden);
+    fprintf(outfp, " ");
+    printVarList(outfp, p->son[0]->son[1]);
+    fprintf(outfp, "\n");
+    if (p->son[1] != NULL) {
+        printLotsOfVarList(outfp, p->son[1], iden);
+    }
+}
+
+void printCompoundStatement(FILE *outfp, AstNode *p, int iden) {
+    fprintf(outfp, " %s\n", p->son[0]->text);
+    printLotsOfVarList(outfp, p->son[1], iden+1);
+    fprintf(outfp, "%s", p->son[3]->text);
+}
+
+void printIndentation(FILE *outfp, int iden) {
+    for (int i = 0; i < 4 * iden; i++) {
+        fprintf(outfp, "%c", ' ');
+    }
+}
+
+void printNode(FILE *outfp, AstNode *p, int iden) {
     if (p == NULL) {
         return ;
     }
@@ -104,36 +130,51 @@ void printNode(FILE *outfp, AstNode *p) {
     }
     switch (p->type) {
         case EXT_INCLUDE:
-            printNode(outfp, p->son[0]);
-            printNode(outfp, p->son[1]);
+            printIndentation(outfp, iden);
+            printNode(outfp, p->son[0], iden);
+            printNode(outfp, p->son[1], iden);
             fprintf(outfp, " ");
-            printNode(outfp, p->son[2]);
+            printNode(outfp, p->son[2], iden);
             fprintf(outfp, "\n");
             break;
-        case EXT_VAR_LIST:
-            printNode(outfp, p->son[0]);
+        case VAR_LIST:
+            printIndentation(outfp, iden);
+            printNode(outfp, p->son[0], iden);
             fprintf(outfp, " ");
-            printExtVarList(outfp, p->son[1]);
+            printVarList(outfp, p->son[1]);
             fprintf(outfp, "\n");
             break;
         case EXT_FUN_STATEMEMT:
-            printNode(outfp, p->son[0]);
+            printIndentation(outfp, iden);
+            printNode(outfp, p->son[0], iden);
             fprintf(outfp, " ");
-            printNode(outfp, p->son[1]->son[0]);
-            printNode(outfp, p->son[1]->son[1]);
-            printExtFunStatement(outfp, p->son[1]->son[2]);
-            printNode(outfp, p->son[1]->son[3]);
-            printNode(outfp, p->son[1]->son[4]);
+            printNode(outfp, p->son[1]->son[0], iden);
+            printNode(outfp, p->son[1]->son[1], iden);
+            printFormalArgList(outfp, p->son[1]->son[2]);
+            printNode(outfp, p->son[1]->son[3], iden);
+            printNode(outfp, p->son[1]->son[4], iden);
+            fprintf(outfp, "\n");
+            break;
+        case EXT_FUN_DEFINITION:
+            printIndentation(outfp, iden);
+            printNode(outfp, p->son[0], iden);
+            fprintf(outfp, " ");
+            printNode(outfp, p->son[1]->son[0], iden);
+            printNode(outfp, p->son[1]->son[1], iden);
+            printFormalArgList(outfp, p->son[1]->son[2]);
+            printNode(outfp, p->son[1]->son[3], iden);
+            printCompoundStatement(outfp, p->son[1]->son[4], iden);
             fprintf(outfp, "\n");
             break;
         default:
             for (int i = 0; i < p->num; i++) {
-                printNode(outfp, p->son[i]);
+                printNode(outfp, p->son[i], iden);
             }
     }
 }
 
-AstNode * processExtVarList(FILE *fp, AstNode *ret, TokenKind kind) {
+// 要读到分号或者是逗号
+AstNode * processVarList(FILE *fp, AstNode *ret, TokenKind kind) {
     if (kind == COMMA) {
         ret = allocSons(ret, 3);
         ret->son[0] = setAstNodeText(ret->son[0], tokenTextTmp);
@@ -146,7 +187,7 @@ AstNode * processExtVarList(FILE *fp, AstNode *ret, TokenKind kind) {
         strcpy(tokenTextTmp, tokenText);
         tokenKind = getToken(fp);
         if (tokenKind == COMMA || tokenKind == SEMI) {
-            ret->son[2] = processExtVarList(fp, ret->son[2], tokenKind);
+            ret->son[2] = processVarList(fp, ret->son[2], tokenKind);
             return ret;
         }
     } else if (tokenKind == SEMI) {
@@ -154,6 +195,9 @@ AstNode * processExtVarList(FILE *fp, AstNode *ret, TokenKind kind) {
         ret->son[0] = setAstNodeText(ret->son[0], tokenTextTmp);
         ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(SEMI));
         return ret;
+    } else {
+        panic("Var list cannot end!");
+        return NULL;
     }
     return ret;
 }
@@ -185,6 +229,49 @@ AstNode * processFormalArgList(FILE *fp, AstNode *ret, TokenKind kind) {
     } else {
         return NULL;
     }
+}
+
+// 最后会多读一个
+AstNode * getLotsOFVarList(FILE *fp, AstNode *ret) {
+    tokenKind = getToken(fp);
+    ret = allocSons(ret, 2);
+    ret->son[0] = allocSons(ret->son[0], 2);
+    ret->son[0]->son[0] = setAstNodeText(ret->son[0]->son[0], getTokenKindStr(tokenKind));
+    if (tokenKind != INT && tokenKind != FLOAT && tokenKind != CHAR) {
+        freeNode(ret);
+        return NULL;
+    }
+    tokenKind = getToken(fp);
+    strcpy(tokenTextTmp, tokenText);
+    if (tokenKind != IDENT) {
+        panic("Want an identifier!\n");
+        return NULL;
+    }
+    tokenKind = getToken(fp);
+    ret->son[0]->son[1] = processVarList(fp, ret->son[0]->son[1], tokenKind);
+    ret->son[1] = getLotsOFVarList(fp, ret->son[1]);
+    return ret;
+}
+
+// 此时 tokenKind 一定是 LBRACE
+AstNode * processCompoundStatement(FILE *fp, AstNode *ret) {
+    ret->type = COMPOUND_STATEMENT;
+    ret = allocSons(ret, 4);
+    ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(LBRACE));
+    printf("into compound statement\n");
+    ret->son[1] = getLotsOFVarList(fp, ret->son[1]);
+    printf("getted lots of statement\n");
+    ret->son[2] = NULL;
+    //tokenKind = getToken(fp);
+    printf("oh yeah\n");
+    if (tokenKind != RBRACE) {
+        panic("Want a }!");
+        return NULL;
+    }
+    printf("oa yeah %p\n", ret->son[3]);
+    ret->son[3] = setAstNodeText(ret->son[3], getTokenKindStr(RBRACE));
+    printf("oj yeah\n");
+    return ret;
 }
 
 AstNode * processExtDef(FILE *fp) {
@@ -229,8 +316,8 @@ AstNode * processExtDef(FILE *fp) {
             strcpy(tokenTextTmp, tokenText);
             tokenKind = getToken(fp);
             if (tokenKind == COMMA || tokenKind == SEMI) {
-                ret->type = EXT_VAR_LIST;
-                ret->son[1] = processExtVarList(fp, ret->son[1], tokenKind);
+                ret->type = VAR_LIST;
+                ret->son[1] = processVarList(fp, ret->son[1], tokenKind);
                 return ret;
             } else if (tokenKind == LP) {
                 ret->son[1] = allocSons(ret->son[1], 5);
@@ -246,13 +333,16 @@ AstNode * processExtDef(FILE *fp) {
                 }
                 ret->son[1]->son[3] = setAstNodeText(ret->son[1]->son[3], getTokenKindStr(RP));
                 tokenKind = getToken(fp);
-                if (tokenKind != SEMI) {
+                if (tokenKind == SEMI) {
+                    ret->type = EXT_FUN_STATEMEMT;
+                    ret->son[1]->son[4] = setAstNodeText(ret->son[1]->son[4], getTokenKindStr(SEMI));
+                } else if (tokenKind == LBRACE) {
+                    ret->type = EXT_FUN_DEFINITION;
+                    ret->son[1]->son[4] = processCompoundStatement(fp, ret->son[1]->son[4]);
+                } else {
                     freeNode(ret);
                     panic("Doesn't get a ;!");
                     return NULL;
-                } else {
-                    ret->type = EXT_FUN_STATEMEMT;
-                    ret->son[1]->son[4] = setAstNodeText(ret->son[1]->son[4], getTokenKindStr(SEMI));
                 }
                 return ret;
             } else {
@@ -283,7 +373,7 @@ void format(FILE *fp, FILE *outfp) {
 
     root = processExtDefList(fp);
 
-    printNode(outfp, root);
+    printNode(outfp, root, 0);
 
     /*enum TokenKind kind;
     while ((kind = getToken(fp))) {
