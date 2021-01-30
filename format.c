@@ -1,11 +1,13 @@
 //
 // Created by poorpool on 2021/1/27.
 //
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include "scan.h"
 #include "format.h"
+#include "print.h"
 
 extern int lineNumber;
 extern TokenKind tokenKind;
@@ -13,9 +15,9 @@ extern char tokenText[];
 
 char tokenTextTmp[1024];
 
-
 AstNode *root;
 
+// 给 p 分配 n 个儿子，并把这 n 个儿子创建好
 AstNode * allocSons(AstNode *p, int n) {
     if (p == NULL) {
         p = newNode();
@@ -28,6 +30,7 @@ AstNode * allocSons(AstNode *p, int n) {
     return p;
 }
 
+// 给 p 分配 n 个儿子，不创建儿子
 AstNode * allocSonsWithoutMalloc(AstNode *p, int n) {
     if (p == NULL) {
         p = newNode();
@@ -40,6 +43,7 @@ AstNode * allocSonsWithoutMalloc(AstNode *p, int n) {
     return p;
 }
 
+// 设置 p 的文字
 AstNode * setAstNodeText(AstNode *p, const char * source) {
     int len = strlen(source);
     if (p->text != NULL)    free(p->text);
@@ -48,6 +52,7 @@ AstNode * setAstNodeText(AstNode *p, const char * source) {
     return p;
 }
 
+// 创建结点
 AstNode * newNode() {
     AstNode * ret = (AstNode*)malloc(sizeof(AstNode));
     ret->num = 0;
@@ -57,6 +62,7 @@ AstNode * newNode() {
     return ret;
 }
 
+// 释放结点
 void freeNode(AstNode *p) {
     if (p == NULL) {
         return ;
@@ -76,104 +82,9 @@ void freeNode(AstNode *p) {
     free(p);
 }
 
-void printVarList(FILE *outfp, AstNode *p) {
-    fprintf(outfp, "%s", p->son[0]->text);
-    fprintf(outfp, "%s", p->son[1]->text);
-    fprintf(outfp, " ");
-    if (p->num == 3) {
-        printVarList(outfp, p->son[2]);
-    }
-}
-
-void printFormalArgList(FILE *outfp, AstNode *p) {
-    fprintf(outfp, "%s", p->son[0]->text);
-    fprintf(outfp, " %s", p->son[1]->text);
-    if (p->num == 4) {
-        fprintf(outfp, "%s", p->son[2]->text);
-        fprintf(outfp, " ");
-        printFormalArgList(outfp, p->son[3]);
-    }
-}
-
-void printLotsOfVarList(FILE *outfp, AstNode *p, int iden) {
-    if (p == NULL) {
-        return ;
-    }
-    printIndentation(outfp, iden);
-    printNode(outfp, p->son[0]->son[0], iden);
-    fprintf(outfp, " ");
-    printVarList(outfp, p->son[0]->son[1]);
-    fprintf(outfp, "\n");
-    if (p->son[1] != NULL) {
-        printLotsOfVarList(outfp, p->son[1], iden);
-    }
-}
-
-void printCompoundStatement(FILE *outfp, AstNode *p, int iden) {
-    fprintf(outfp, " %s\n", p->son[0]->text);
-    printLotsOfVarList(outfp, p->son[1], iden+1);
-    fprintf(outfp, "%s", p->son[3]->text);
-}
-
-void printIndentation(FILE *outfp, int iden) {
-    for (int i = 0; i < 4 * iden; i++) {
-        fprintf(outfp, "%c", ' ');
-    }
-}
-
-void printNode(FILE *outfp, AstNode *p, int iden) {
-    if (p == NULL) {
-        return ;
-    }
-    if (p->text != NULL) { // fixme: 这个顺序对吗？
-        fprintf(outfp,"%s", p->text);
-    }
-    switch (p->type) {
-        case EXT_INCLUDE:
-            printIndentation(outfp, iden);
-            printNode(outfp, p->son[0], iden);
-            printNode(outfp, p->son[1], iden);
-            fprintf(outfp, " ");
-            printNode(outfp, p->son[2], iden);
-            fprintf(outfp, "\n");
-            break;
-        case VAR_LIST:
-            printIndentation(outfp, iden);
-            printNode(outfp, p->son[0], iden);
-            fprintf(outfp, " ");
-            printVarList(outfp, p->son[1]);
-            fprintf(outfp, "\n");
-            break;
-        case EXT_FUN_STATEMEMT:
-            printIndentation(outfp, iden);
-            printNode(outfp, p->son[0], iden);
-            fprintf(outfp, " ");
-            printNode(outfp, p->son[1]->son[0], iden);
-            printNode(outfp, p->son[1]->son[1], iden);
-            printFormalArgList(outfp, p->son[1]->son[2]);
-            printNode(outfp, p->son[1]->son[3], iden);
-            printNode(outfp, p->son[1]->son[4], iden);
-            fprintf(outfp, "\n");
-            break;
-        case EXT_FUN_DEFINITION:
-            printIndentation(outfp, iden);
-            printNode(outfp, p->son[0], iden);
-            fprintf(outfp, " ");
-            printNode(outfp, p->son[1]->son[0], iden);
-            printNode(outfp, p->son[1]->son[1], iden);
-            printFormalArgList(outfp, p->son[1]->son[2]);
-            printNode(outfp, p->son[1]->son[3], iden);
-            printCompoundStatement(outfp, p->son[1]->son[4], iden);
-            fprintf(outfp, "\n");
-            break;
-        default:
-            for (int i = 0; i < p->num; i++) {
-                printNode(outfp, p->son[i], iden);
-            }
-    }
-}
-
-// 要读到分号或者是逗号
+// 处理变量序列，要传进来一个当前读到的 TokenKind，要是分号或者是逗号，并且把标识符放到 tokenTextTmp 里
+// 注意不含类型（int, float, char）
+// 不会多读
 AstNode * processVarList(FILE *fp, AstNode *ret, TokenKind kind) {
     if (kind == COMMA) {
         ret = allocSons(ret, 3);
@@ -202,9 +113,10 @@ AstNode * processVarList(FILE *fp, AstNode *ret, TokenKind kind) {
     return ret;
 }
 
-// 得到、留下不是int char float的第一个kind
+// 处理形式参数序列
+// 要传一个 kind 且为 int/float/char
+// 会多读一个
 AstNode * processFormalArgList(FILE *fp, AstNode *ret, TokenKind kind) {
-    printf("now kind %s\n", getTokenKindStr(kind));
     if (kind == INT || kind == FLOAT || kind == CHAR) {
         tokenKind = getToken(fp);
         if (tokenKind != IDENT) {
@@ -231,6 +143,7 @@ AstNode * processFormalArgList(FILE *fp, AstNode *ret, TokenKind kind) {
     }
 }
 
+// 得到许多变量序列
 // 最后会多读一个
 AstNode * getLotsOFVarList(FILE *fp, AstNode *ret) {
     tokenKind = getToken(fp);
@@ -253,27 +166,24 @@ AstNode * getLotsOFVarList(FILE *fp, AstNode *ret) {
     return ret;
 }
 
+// 得到 {} 包裹的复合语句
 // 此时 tokenKind 一定是 LBRACE
+// 不会多读
 AstNode * processCompoundStatement(FILE *fp, AstNode *ret) {
     ret->type = COMPOUND_STATEMENT;
     ret = allocSons(ret, 4);
     ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(LBRACE));
-    printf("into compound statement\n");
     ret->son[1] = getLotsOFVarList(fp, ret->son[1]);
-    printf("getted lots of statement\n");
     ret->son[2] = NULL;
-    //tokenKind = getToken(fp);
-    printf("oh yeah\n");
     if (tokenKind != RBRACE) {
         panic("Want a }!");
         return NULL;
     }
-    printf("oa yeah %p\n", ret->son[3]);
     ret->son[3] = setAstNodeText(ret->son[3], getTokenKindStr(RBRACE));
-    printf("oj yeah\n");
     return ret;
 }
 
+// 得到外部定义，有多种情况
 AstNode * processExtDef(FILE *fp) {
     tokenKind = getToken(fp);
     AstNode * ret = newNode();
@@ -370,17 +280,7 @@ AstNode * processExtDefList(FILE *fp) {
 }
 
 void format(FILE *fp, FILE *outfp) {
-
     root = processExtDefList(fp);
-
     printNode(outfp, root, 0);
-
-    /*enum TokenKind kind;
-    while ((kind = getToken(fp))) {
-        if (kind == ENDOFFILE) {
-            break;
-        }
-        printf("Line %d: %s\n", lineNumber, getTokenKindStr(kind));
-    }*/
 }
 

@@ -27,7 +27,7 @@ struct astnode {
 };
 
 typedef struct astnode AstNode;
-// 读取 fp 程序，输出格式化程序到 outfp
+
 void format(FILE *fp, FILE *outfp);
 
 AstNode * allocSons(AstNode *p, int n);
@@ -40,25 +40,16 @@ AstNode * newNode();
 
 void freeNode(AstNode *p);
 
-// 打印缩进
-void printIndentation(FILE *outfp, int iden);
-
-void printNode(FILE *outfp, AstNode *p, int iden); // 和缩进
-
-// 处理外部定义序列
 AstNode * processExtDef(FILE *fp);
 
-// 处理外部定义序列
 AstNode * processExtDefList(FILE *fp);
 
-// 处理外部变量序列
 AstNode * processVarList(FILE *fp, AstNode *ret, TokenKind kind);
 
-// 处理形式参数序列
 AstNode * processFormalArgList(FILE *fp, AstNode *ret, TokenKind kind);
 
-// 处理复合语句
-AstNode * processCompoundStatement(FILE *fp, AstNode *ret);
+AstNode * getLotsOFVarList(FILE *fp, AstNode *ret);
 
+AstNode * processCompoundStatement(FILE *fp, AstNode *ret);
 
 #endif //MINIC_FORMAT_H

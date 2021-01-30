@@ -5,6 +5,7 @@ int a, b,c,
 d; float e, f; int ack_nie;
 char __gg;
 char fun         (int a, float b, char c) {int a;  char a;
-                                                  int a, b,c,
-                                                  d; float e, f; int ack_nie;
+                                                  int a, b,
+                                            c,
+                         d; float e, f; int ack_123nie;
                                                   char __gg;}

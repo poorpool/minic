@@ -9,6 +9,6 @@ char fun(int a, float b, char c) {
     char a; 
     int a, b, c, d; 
     float e, f; 
-    int ack_nie; 
+    int ack_123nie; 
     char __gg; 
 }
