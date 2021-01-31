@@ -8,6 +8,7 @@
 #include "scan.h"
 #include "format.h"
 #include "print.h"
+#include "expression.h"
 
 extern int lineNumber;
 extern TokenKind tokenKind;
@@ -166,6 +167,33 @@ AstNode * getLotsOFVarList(FILE *fp, AstNode *ret) {
     return ret;
 }
 
+// 处理一条语句
+// 不会多读
+AstNode * processSentence(FILE *fp, AstNode *ret, TokenKind kind) {
+    ret = allocSons(ret, 2);
+    ret->son[0] = expression(fp, ret->son[0], kind);
+    if (tokenKind != SEMI) {
+        panic("Want a ;!");
+        return NULL;
+    }
+    ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(SEMI));
+    return ret;
+}
+
+// 得到许多语句
+// 会多读
+AstNode * getLotsOfSentence(FILE *fp, AstNode *ret, TokenKind kind) {
+    if (kind == RBRACE) {
+        return NULL;
+    } else {
+        ret = allocSons(ret, 2);
+        ret->son[0] = processSentence(fp, ret->son[0], kind);
+        tokenKind = getToken(fp);
+        ret->son[1] = getLotsOfSentence(fp, ret->son[1], tokenKind);
+        return ret;
+    }
+}
+
 // 得到 {} 包裹的复合语句
 // 此时 tokenKind 一定是 LBRACE
 // 不会多读
@@ -174,7 +202,7 @@ AstNode * processCompoundStatement(FILE *fp, AstNode *ret) {
     ret = allocSons(ret, 4);
     ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(LBRACE));
     ret->son[1] = getLotsOFVarList(fp, ret->son[1]);
-    ret->son[2] = NULL;
+    ret->son[2] = getLotsOfSentence(fp, ret->son[2], tokenKind);
     if (tokenKind != RBRACE) {
         panic("Want a }!");
         return NULL;

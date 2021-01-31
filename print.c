@@ -41,10 +41,26 @@ void printLotsOfVarList(FILE *outfp, AstNode *p, int iden) {
     }
 }
 
+// 打印许多语句
+void printLotsOfSentence(FILE *outfp, AstNode *p, int iden) {
+    if (p == NULL) {
+        return ;
+    }
+    printIndentation(outfp, iden);
+    printNode(outfp, p->son[0]->son[0], iden);// 打印表达式序列，先这么写吧
+    printNode(outfp, p->son[0]->son[1], iden);// 打印分号
+    fprintf(outfp, "\n");
+    if (p->son[1] != NULL) {
+        printLotsOfSentence(outfp, p->son[1], iden);
+    }
+}
+
+
 // 打印 {} 包裹的复合语句
 void printCompoundStatement(FILE *outfp, AstNode *p, int iden) {
     fprintf(outfp, " %s\n", p->son[0]->text);
     printLotsOfVarList(outfp, p->son[1], iden+1);
+    printLotsOfSentence(outfp, p->son[2], iden+1);
     fprintf(outfp, "%s", p->son[3]->text);
 }
 

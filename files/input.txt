@@ -8,4 +8,7 @@ char fun         (int a, float b, char c) {int a;  char a;
                                                   int a, b,
                                             c,
                          d; float e, f; int ack_123nie;
-                                                  char __gg;}
+                                                  char __gg;
+                                                  ('\n'+12)*3.0;
+                                                  c+d*e+
+                                     fs;}

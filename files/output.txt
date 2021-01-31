@@ -11,4 +11,6 @@ char fun(int a, float b, char c) {
     float e, f; 
     int ack_123nie; 
     char __gg; 
+    ('\n'+12)*3.0;
+    c+d*e+fs;
 }

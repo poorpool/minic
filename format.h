@@ -17,6 +17,22 @@ typedef enum {
     EXT_FUN_STATEMEMT, // 外部函数声明。int fun_name(形参序列);
     EXT_FUN_DEFINITION, // 外部函数定义，int fun_name(形参序列) 复合语句
     COMPOUND_STATEMENT, // 复合语句，{ 许多变量定义 许多语句 }
+
+    // 下面是表达式解析用到的 type，具体看文档
+    ACTUAL_EXPRESSION,
+    OR_EXPRESSION,
+    OR_EXPRESSION_,
+    AND_EXPRESSION,
+    AND_EXPRESSION_,
+    EQUAL_EXPRESSION,
+    EQUAL_EXPRESSION_,
+    COMPARE_EXPRESSION,
+    COMPARE_EXPRESSION_,
+    EXPRESSION,
+    EXPRESSION_,
+    TERM,
+    TERM_,
+    FACTOR
 } ASTType;
 
 struct astnode {
@@ -48,7 +64,11 @@ AstNode * processVarList(FILE *fp, AstNode *ret, TokenKind kind);
 
 AstNode * processFormalArgList(FILE *fp, AstNode *ret, TokenKind kind);
 
+AstNode * processSentence(FILE *fp, AstNode *ret, TokenKind kind);
+
 AstNode * getLotsOFVarList(FILE *fp, AstNode *ret);
+
+AstNode * getLotsOfSentence(FILE *fp, AstNode *ret, TokenKind kind);
 
 AstNode * processCompoundStatement(FILE *fp, AstNode *ret);
 
