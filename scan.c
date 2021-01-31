@@ -299,6 +299,34 @@ TokenKind getToken(FILE *fp) {
     }
 }
 
+void unGetTokenKindStr(FILE *fp, const char * s) {
+    ungetc(' ', fp);
+    int len = strlen(s);
+    for (int i = len - 1; i >= 0; i--) {
+        ungetc(s[i], fp);
+    }
+}
+
+void unGetToken(FILE *fp, TokenKind kind) {
+    switch (kind) {
+        case ERROR_TOKEN:
+        case ENDOFFILE:
+            ;
+        case IDENT:
+        case INT_CONST:
+        case FLOAT_CONST:
+        case CHAR_CONST:
+        case STRING:
+        case LINE_COMMENT:
+        case BLOCK_COMMENT:
+            unGetTokenKindStr(fp, tokenText);
+            break;
+        default:
+            unGetTokenKindStr(fp, getTokenKindStr(kind));
+            break;
+    }
+}
+
 const char * getTokenKindStr(TokenKind kind) {
     switch (kind) {
         case ERROR_TOKEN:

@@ -41,20 +41,61 @@ void printLotsOfVarList(FILE *outfp, AstNode *p, int iden) {
     }
 }
 
+void printExpression(FILE *outfp, AstNode *p) {
+    if (p == NULL) {
+        return ;
+    }
+    switch (p->type) {
+        case ACTUAL_EXPRESSION:
+            fprintf(outfp, "%s", p->son[0]->text);
+            fprintf(outfp, " %s ", p->son[1]->text);
+            printExpression(outfp, p->son[2]);
+            break;
+        case OR_EXPRESSION:
+        case AND_EXPRESSION:
+        case EQUAL_EXPRESSION:
+        case COMPARE_EXPRESSION:
+        case EXPRESSION:
+        case TERM:
+            printExpression(outfp, p->son[0]);
+            printExpression(outfp, p->son[1]);
+            break;
+        case OR_EXPRESSION_:
+        case AND_EXPRESSION_:
+        case EQUAL_EXPRESSION_:
+        case COMPARE_EXPRESSION_:
+        case EXPRESSION_:
+        case TERM_:
+            fprintf(outfp, " %s ", p->son[0]->text);
+            printExpression(outfp, p->son[1]);
+            printExpression(outfp, p->son[2]);
+            break;
+        case FACTOR:
+            if (p->num == 3) {
+                fprintf(outfp, "%s", p->son[0]->text);
+                printExpression(outfp, p->son[1]);
+                fprintf(outfp, "%s", p->son[2]->text);
+            } else {
+                printNode(outfp, p, 0);
+            }
+            break;
+    }
+}
+
 // 打印许多语句
 void printLotsOfSentence(FILE *outfp, AstNode *p, int iden) {
     if (p == NULL) {
         return ;
     }
     printIndentation(outfp, iden);
-    printNode(outfp, p->son[0]->son[0], iden);// 打印表达式序列，先这么写吧
+    //printNode(outfp, p->son[0]->son[0], iden); 打印表达式序列，先这么写吧
+    printExpression(outfp, p->son[0]->son[0]);
     printNode(outfp, p->son[0]->son[1], iden);// 打印分号
     fprintf(outfp, "\n");
     if (p->son[1] != NULL) {
         printLotsOfSentence(outfp, p->son[1], iden);
     }
 }
-
 
 // 打印 {} 包裹的复合语句
 void printCompoundStatement(FILE *outfp, AstNode *p, int iden) {

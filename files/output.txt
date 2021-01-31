@@ -11,6 +11,6 @@ char fun(int a, float b, char c) {
     float e, f; 
     int ack_123nie; 
     char __gg; 
-    ('\n'+12)*3.0;
-    c+d*e+fs;
+    a = n;
+    a = b = c = d = e * f && (a >= 1) || 'c' - 2 < 3.0 != d;
 }

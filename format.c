@@ -171,7 +171,7 @@ AstNode * getLotsOFVarList(FILE *fp, AstNode *ret) {
 // 不会多读
 AstNode * processSentence(FILE *fp, AstNode *ret, TokenKind kind) {
     ret = allocSons(ret, 2);
-    ret->son[0] = expression(fp, ret->son[0], kind);
+    ret->son[0] = actualExpression(fp, ret->son[0], kind);
     if (tokenKind != SEMI) {
         panic("Want a ;!");
         return NULL;

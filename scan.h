@@ -59,6 +59,10 @@ typedef enum {
 
 TokenKind getToken(FILE *fp);
 
+void unGetTokenKindStr(FILE *fp, const char * s);
+
+void unGetToken(FILE *fp, TokenKind kind);
+
 const char * getTokenKindStr(TokenKind kind);
 
 #endif //MINIC_SCAN_H

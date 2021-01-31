@@ -2,13 +2,196 @@
 // Created by poorpool on 2021/1/31.
 //
 
+#include <string.h>
 #include "expression.h"
-
 extern int lineNumber;
 extern TokenKind tokenKind;
 extern char tokenText[];
 
-// 底下的都会吞一个
+/*
+ * 所有 *_ 函数都会在最后多读一个
+ * 非 _ 函数因为最后调用 _ 所以也会多读一个
+ * */
+
+AstNode * actualExpression(FILE *fp, AstNode * ret, TokenKind kind) {
+    if (kind == IDENT) {
+        char *tmp = (char *)malloc(strlen(tokenText)+1);
+        strcpy(tmp, tokenText);
+        tokenKind = getToken(fp);
+        if (tokenKind == ASSIGN) {
+            ret = allocSons(ret, 3);
+            ret->type = ACTUAL_EXPRESSION;
+            ret->son[0] = setAstNodeText(ret->son[0], tokenText);
+            ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(ASSIGN));
+            tokenKind = getToken(fp);
+            ret->son[2] = actualExpression(fp, ret->son[2], tokenKind);
+            return ret;
+        } else {
+            unGetToken(fp, tokenKind);
+            tokenKind = IDENT;
+            strcpy(tokenText, tmp);
+            return orExpression(fp, ret, tokenKind);
+        }
+    } else {
+        return orExpression(fp, ret, kind);
+    }
+}
+
+AstNode * orExpression(FILE *fp, AstNode * ret, TokenKind kind) {
+    ret = allocSons(ret, 2);
+    ret->type = OR_EXPRESSION;
+    ret->son[0] = andExpression(fp, ret->son[0], kind);
+    ret->son[1] = orExpression_(fp, ret->son[1], tokenKind);
+    return ret;
+}
+
+AstNode * orExpression_(FILE *fp, AstNode * ret, TokenKind kind) {
+    ret = allocSons(ret, 3);
+    ret->type = OR_EXPRESSION_;
+    switch (kind) {
+        case LOGIC_OR:
+            ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(LOGIC_OR));
+            tokenKind = getToken(fp);
+            ret->son[1] = andExpression(fp, ret->son[1], tokenKind);
+            ret->son[2] = orExpression_(fp, ret->son[2], tokenKind);
+            return ret;
+            break;
+        case SEMI:
+        case RP:
+            freeNode(ret);
+            return NULL;
+            break;
+        default:
+            panic("Error in handling andExpression!");
+            return NULL;
+    }
+}
+
+AstNode * andExpression(FILE *fp, AstNode * ret, TokenKind kind) {
+    ret = allocSons(ret, 2);
+    ret->type = AND_EXPRESSION;
+    ret->son[0] = equalExpression(fp, ret->son[0], kind);
+    ret->son[1] = andExpression_(fp, ret->son[1], tokenKind);
+    return ret;
+}
+
+AstNode * andExpression_(FILE *fp, AstNode * ret, TokenKind kind) {
+    ret = allocSons(ret, 3);
+    ret->type = AND_EXPRESSION_;
+    switch (kind) {
+        case LOGIC_AND:
+            ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(LOGIC_AND));
+            tokenKind = getToken(fp);
+            ret->son[1] = equalExpression(fp, ret->son[1], tokenKind);
+            ret->son[2] = andExpression_(fp, ret->son[2], tokenKind);
+            return ret;
+            break;
+        case LOGIC_OR:
+        case SEMI:
+        case RP:
+            freeNode(ret);
+            return NULL;
+            break;
+        default:
+            panic("Error in handling andExpression!");
+            return NULL;
+    }
+}
+
+AstNode * equalExpression(FILE *fp, AstNode * ret, TokenKind kind) {
+    ret = allocSons(ret, 2);
+    ret->type = EQUAL_EXPRESSION;
+    ret->son[0] = compareExpression(fp, ret->son[0], kind);
+    ret->son[1] = equalExpression_(fp, ret->son[1], tokenKind);
+    return ret;
+}
+
+AstNode * equalExpression_(FILE *fp, AstNode * ret, TokenKind kind) {
+    ret = allocSons(ret, 3);
+    ret->type = EQUAL_EXPRESSION_;
+    switch (kind) {
+        case EQUAL:
+            ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(EQUAL));
+            tokenKind = getToken(fp);
+            ret->son[1] = compareExpression(fp, ret->son[1], tokenKind);
+            ret->son[2] = equalExpression_(fp, ret->son[2], tokenKind);
+            return ret;
+            break;
+        case NEQ:
+            ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(NEQ));
+            tokenKind = getToken(fp);
+            ret->son[1] = compareExpression(fp, ret->son[1], tokenKind);
+            ret->son[2] = equalExpression_(fp, ret->son[2], tokenKind);
+            return ret;
+            break;
+        case LOGIC_AND:
+        case LOGIC_OR:
+        case SEMI:
+        case RP:
+            freeNode(ret);
+            return NULL;
+            break;
+        default:
+            panic("Error in handling equalExpression!");
+            return NULL;
+    }
+}
+
+AstNode * compareExpression(FILE *fp, AstNode * ret, TokenKind kind) {
+    ret = allocSons(ret, 2);
+    ret->type = COMPARE_EXPRESSION;
+    ret->son[0] = expression(fp, ret->son[0], kind);
+    ret->son[1] = compareExpression_(fp, ret->son[1], tokenKind);
+    return ret;
+}
+
+AstNode * compareExpression_(FILE *fp, AstNode * ret, TokenKind kind) {
+    ret = allocSons(ret, 3);
+    ret->type = COMPARE_EXPRESSION_;
+    switch (kind) {
+        case GREAT:
+            ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(GREAT));
+            tokenKind = getToken(fp);
+            ret->son[1] = expression(fp, ret->son[1], tokenKind);
+            ret->son[2] = compareExpression_(fp, ret->son[2], tokenKind);
+            return ret;
+            break;
+        case GEQ:
+            ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(GEQ));
+            tokenKind = getToken(fp);
+            ret->son[1] = expression(fp, ret->son[1], tokenKind);
+            ret->son[2] = compareExpression_(fp, ret->son[2], tokenKind);
+            return ret;
+            break;
+        case LESS:
+            ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(LESS));
+            tokenKind = getToken(fp);
+            ret->son[1] = expression(fp, ret->son[1], tokenKind);
+            ret->son[2] = compareExpression_(fp, ret->son[2], tokenKind);
+            return ret;
+            break;
+        case LEQ:
+            ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(LEQ));
+            tokenKind = getToken(fp);
+            ret->son[1] = expression(fp, ret->son[1], tokenKind);
+            ret->son[2] = compareExpression_(fp, ret->son[2], tokenKind);
+            return ret;
+            break;
+        case EQUAL:
+        case NEQ:
+        case LOGIC_AND:
+        case LOGIC_OR:
+        case SEMI:
+        case RP:
+            freeNode(ret);
+            return NULL;
+            break;
+        default:
+            panic("Error in handling compareExpression!");
+            return NULL;
+    }
+}
+
 AstNode * expression(FILE *fp, AstNode * ret, TokenKind kind) {
     ret = allocSons(ret, 2);
     ret->type = EXPRESSION;
@@ -103,7 +286,7 @@ AstNode * term_(FILE *fp, AstNode * ret, TokenKind kind) {
             return NULL;
             break;
         default:
-            panic("Error in handling expression!");
+            panic("Error in handling term!");
             return NULL;
     }
 }
@@ -115,7 +298,7 @@ AstNode * factor(FILE *fp, AstNode * ret, TokenKind kind) {
             ret = allocSons(ret, 3);
             ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(LP));
             tokenKind = getToken(fp);
-            ret->son[1] = expression(fp, ret->son[1], tokenKind);
+            ret->son[1] = actualExpression(fp, ret->son[1], tokenKind);
             if (tokenKind != RP) {
                 panic("Want a )!");
                 return NULL;
