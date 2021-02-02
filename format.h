@@ -22,6 +22,9 @@ typedef enum {
     ELSE_STATEMENT,
     RETURN_STATEMENT,
     FOR_STATEMENT,
+    WHILE_STATEMENT,
+    BREAK_STATEMENT,
+    CONTINUE_STATEMENT,
 
     // 下面是表达式解析用到的 type，具体看文档
     ACTUAL_EXPRESSION,

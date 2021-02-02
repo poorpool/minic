@@ -22,9 +22,24 @@ char fun(int a, float b, char c) {
         return b;
     } else {
         int a; 
+        ;
+        ;
+        ;
+        ;
     }
     for (i = 1; i < 10;) {
+        for (j = j - 1; j > 0; j = j - 1) {
+            while (1) {
+                a = j;
+                continue;
+            }
+            break;
+        }
+        continue;
         return i;
+    }
+    while (1) {
+        return 1;
     }
 }
 int i, j; 

@@ -311,9 +311,63 @@ AstNode * processSentence(FILE *fp, AstNode *ret, TokenKind kind) {
             ret->son[8] = processCompoundStatement(fp, ret->son[8]);
             return ret;
             break;
+        case WHILE:
+            ret = allocSons(ret, 5);
+            ret->type = WHILE_STATEMENT;
+            ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(WHILE));
+            tokenKind = getToken(fp);
+            if (tokenKind != LP) {
+                panic("while want a (!");
+                return NULL;
+            }
+            ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(LP));
+            tokenKind = getToken(fp);
+            ret->son[2] = actualExpression(fp, ret->son[2], tokenKind);
+            if (tokenKind != RP) {
+                panic("while want a )!");
+                return NULL;
+            }
+            ret->son[3] = setAstNodeText(ret->son[3], getTokenKindStr(RP));
+            tokenKind = getToken(fp);
+            if (tokenKind != LBRACE) {
+                panic("for want a {!");
+                return NULL;
+            }
+            ret->son[4] = processCompoundStatement(fp, ret->son[4]);
+            return ret;
+            break;
+        case BREAK:
+            ret = allocSons(ret, 2);
+            ret->type = BREAK_STATEMENT;
+            ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(BREAK));
+            tokenKind = getToken(fp);
+            if (tokenKind != SEMI) {
+                panic("break want a ;!");
+                return NULL;
+            }
+            ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(SEMI));
+            return ret;
+            break;
+        case CONTINUE:
+            ret = allocSons(ret, 2);
+            ret->type = CONTINUE_STATEMENT;
+            ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(CONTINUE));
+            tokenKind = getToken(fp);
+            if (tokenKind != SEMI) {
+                panic("continue want a ;!");
+                return NULL;
+            }
+            ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(SEMI));
+            return ret;
+            break;
+        case SEMI:
+            ret = allocSons(ret, 2);
+            ret->son[0] = NULL;
+            ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(SEMI));
+            return ret;
+            break;
         default:
             ret = allocSons(ret, 2);
-            // fixme: 判断空语句
             ret->son[0] = actualExpression(fp, ret->son[0], kind);
             if (tokenKind != SEMI) {
                 panic("Want a ;!");

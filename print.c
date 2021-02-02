@@ -143,6 +143,21 @@ void printLotsOfSentence(FILE *outfp, AstNode *p, int iden) {
             printNode(outfp, p->son[0]->son[7], iden);
             printCompoundStatement(outfp, p->son[0]->son[8], iden);
             break;
+        case WHILE_STATEMENT:
+            printIndentation(outfp, iden);
+            printNode(outfp, p->son[0]->son[0], iden);
+            fprintf(outfp, " ");
+            printNode(outfp, p->son[0]->son[1], iden);
+            printExpression(outfp, p->son[0]->son[2]);
+            printNode(outfp, p->son[0]->son[3], iden);
+            printCompoundStatement(outfp, p->son[0]->son[4], iden);
+            break;
+        case BREAK_STATEMENT:
+        case CONTINUE_STATEMENT:
+            printIndentation(outfp, iden);
+            printNode(outfp, p->son[0]->son[0], iden);
+            printNode(outfp, p->son[0]->son[1], iden);
+            break;
         default:
             printIndentation(outfp, iden);
             printExpression(outfp, p->son[0]->son[0]);
