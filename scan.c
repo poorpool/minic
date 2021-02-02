@@ -19,6 +19,48 @@ int wantChar(FILE *fp, int want) {
     }
     return 1;
 }
+
+void getTextUntilNewLine(FILE *fp) {
+    tokenLen = 0;
+    tokenText[0] = '\0';
+    int c;
+    while ((c = fgetc(fp))) {
+        if (feof(fp)) {
+            return ;
+        }
+        if (!isascii(c)) {
+            panic("Not ascii character!");
+            return ;
+        }
+        if (isspace(c)) {
+            if (c == '\n') {
+                lineNumber++;
+            }
+        } else {
+            tokenText[tokenLen++] = c;
+            break;
+        }
+    }
+    while ((c = fgetc(fp))) {
+        if (feof(fp)) {
+            return ;
+        }
+        if (!isascii(c)) {
+            panic("Not ascii character!");
+            return ;
+        }
+        if (isspace(c)) {
+            if (c == '\n') {
+                ungetc(c, fp);
+                tokenText[tokenLen] = '\0';
+                return ;
+            }
+        }
+        tokenText[tokenLen++] = c;
+    }
+    tokenText[tokenLen] = '\0';
+}
+
 TokenKind getToken(FILE *fp) {
     if (feof(fp)) {
         return ENDOFFILE;

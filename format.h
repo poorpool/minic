@@ -12,6 +12,7 @@ typedef enum {
     UNKNOWN, // 并不关心
     EXT_DEF_LIST, // 外部定义序列
     EXT_INCLUDE, // 外部定义 include
+    EXT_DEFINE,
     VAR_LIST, // 外部变量序列int a, b, c;（不含）
     // FORMAL_ARG_LIST,  形式参数序列 int a, float b, char c 似乎没用到
     EXT_FUN_STATEMEMT, // 外部函数声明。int fun_name(形参序列);

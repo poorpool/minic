@@ -432,9 +432,23 @@ AstNode * processExtDef(FILE *fp) {
                     panic("Include doesn't complete!");
                     return NULL;
                 }
+            } else if (tokenKind == DEFINE) {
+                ret->type = EXT_DEFINE;
+                ret = allocSons(ret, 4);
+                ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(SHARP));
+                ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(DEFINE));
+                tokenKind = getToken(fp);
+                if (tokenKind != IDENT) {
+                    freeNode(ret);
+                    panic("define want a identifier!");
+                    return NULL;
+                }
+                ret->son[2] = setAstNodeText(ret->son[2], tokenText);
+                getTextUntilNewLine(fp);
+                ret->son[3] = setAstNodeText(ret->son[3], tokenText);
+                return ret;
             } else {
-                freeNode(ret);
-                panic("Confusing #!");
+                panic("Confusing #");
                 return NULL;
             }
             break;

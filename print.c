@@ -202,6 +202,16 @@ void printNode(FILE *outfp, AstNode *p, int iden) {
             printNode(outfp, p->son[2], iden);
             fprintf(outfp, "\n");
             break;
+        case EXT_DEFINE:
+            printIndentation(outfp, iden);
+            printNode(outfp, p->son[0], iden);
+            printNode(outfp, p->son[1], iden);
+            fprintf(outfp, " ");
+            printNode(outfp, p->son[2], iden);
+            fprintf(outfp, " ");
+            printNode(outfp, p->son[3], iden);
+            fprintf(outfp, "\n");
+            break;
         case VAR_LIST:
             printIndentation(outfp, iden);
             printNode(outfp, p->son[0], iden);
