@@ -20,6 +20,8 @@ typedef enum {
     IF_STATEMENT,
     ELSE_IF_STATEMENT,
     ELSE_STATEMENT,
+    RETURN_STATEMENT,
+    FOR_STATEMENT,
 
     // 下面是表达式解析用到的 type，具体看文档
     ACTUAL_EXPRESSION,

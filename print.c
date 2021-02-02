@@ -115,8 +115,33 @@ void printLotsOfSentence(FILE *outfp, AstNode *p, int iden) {
     //printNode(outfp, p->son[0]->son[0], iden); 打印表达式序列，先这么写吧
     switch (p->son[0]->type) {
         case IF_STATEMENT:
-            printf("will print if\n");
             printIf(outfp, p->son[0], iden);
+            break;
+        case RETURN_STATEMENT:
+            printIndentation(outfp, iden);
+            printNode(outfp, p->son[0]->son[0], iden);
+            fprintf(outfp, " ");
+            printExpression(outfp, p->son[0]->son[1]);
+            printNode(outfp, p->son[0]->son[2], iden);// 打印分号
+            break;
+        case FOR_STATEMENT:
+            printIndentation(outfp, iden);
+            printNode(outfp, p->son[0]->son[0], iden);
+            fprintf(outfp, " ");
+            printNode(outfp, p->son[0]->son[1], iden);
+            printExpression(outfp, p->son[0]->son[2]);
+            printNode(outfp, p->son[0]->son[3], iden);
+            if (p->son[0]->son[4] != NULL) {
+                fprintf(outfp, " ");
+            }
+            printExpression(outfp, p->son[0]->son[4]);
+            printNode(outfp, p->son[0]->son[5], iden);
+            if (p->son[0]->son[6] != NULL) {
+                fprintf(outfp, " ");
+            }
+            printExpression(outfp, p->son[0]->son[6]);
+            printNode(outfp, p->son[0]->son[7], iden);
+            printCompoundStatement(outfp, p->son[0]->son[8], iden);
             break;
         default:
             printIndentation(outfp, iden);

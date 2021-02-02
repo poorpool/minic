@@ -246,8 +246,74 @@ AstNode * processSentence(FILE *fp, AstNode *ret, TokenKind kind) {
     switch (kind) {
         case IF:
             return processIf(fp, ret, kind);
+            break;
+        case RETURN:
+            ret = allocSons(ret, 3);
+            ret->type = RETURN_STATEMENT;
+            ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(RETURN));
+            tokenKind = getToken(fp);
+            ret->son[1] = actualExpression(fp, ret->son[1], tokenKind);
+            if (tokenKind != SEMI) {
+                panic("return want a ;!");
+                return NULL;
+            }
+            ret->son[2] = setAstNodeText(ret->son[2], getTokenKindStr(SEMI));
+            return ret;
+            break;
+        case FOR:
+            ret = allocSons(ret, 9);
+            ret->type = FOR_STATEMENT;
+            ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(FOR));
+            tokenKind = getToken(fp);
+            if (tokenKind != LP) {
+                panic("for want a (!");
+                return NULL;
+            }
+            ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(LP));
+            tokenKind = getToken(fp);
+            if (tokenKind != SEMI) {
+                ret->son[2] = actualExpression(fp, ret->son[2], tokenKind);
+            } else {
+                ret->son[2] = NULL;
+            }
+            if (tokenKind != SEMI) {
+                panic("for want a ;!");
+                return NULL;
+            }
+            ret->son[3] = setAstNodeText(ret->son[3], getTokenKindStr(SEMI));
+            tokenKind = getToken(fp);
+            if (tokenKind != SEMI) {
+                ret->son[4] = actualExpression(fp, ret->son[4], tokenKind);
+            } else {
+                ret->son[4] = NULL;
+            }
+            if (tokenKind != SEMI) {
+                panic("for want a ;!");
+                return NULL;
+            }
+            ret->son[5] = setAstNodeText(ret->son[5], getTokenKindStr(SEMI));
+            tokenKind = getToken(fp);
+            if (tokenKind != RP) {
+                ret->son[6] = actualExpression(fp, ret->son[2], tokenKind);
+            } else {
+                ret->son[6] = NULL;
+            }
+            if (tokenKind != RP) {
+                panic("for want a )!");
+                return NULL;
+            }
+            ret->son[7] = setAstNodeText(ret->son[7], getTokenKindStr(RP));
+            tokenKind = getToken(fp);
+            if (tokenKind != LBRACE) {
+                panic("for want a {!");
+                return NULL;
+            }
+            ret->son[8] = processCompoundStatement(fp, ret->son[8]);
+            return ret;
+            break;
         default:
             ret = allocSons(ret, 2);
+            // fixme: 判断空语句
             ret->son[0] = actualExpression(fp, ret->son[0], kind);
             if (tokenKind != SEMI) {
                 panic("Want a ;!");
@@ -367,7 +433,7 @@ AstNode * processExtDef(FILE *fp) {
                 return NULL;
             }
         default:
-            panic("还没处理呢!");
+            panic("Confusing ext type!");
             return NULL;
     }
 }
