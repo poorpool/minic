@@ -69,7 +69,7 @@ AstNode * processExtDef(FILE *fp);
 
 AstNode * processExtDefList(FILE *fp);
 
-AstNode * processVarList(FILE *fp, AstNode *ret, TokenKind kind);
+AstNode * processVarList(FILE *fp, AstNode *ret, AstNode *lson, TokenKind kind);
 
 AstNode * processFormalArgList(FILE *fp, AstNode *ret, TokenKind kind);
 
@@ -78,6 +78,8 @@ AstNode * processIf(FILE *fp, AstNode *ret, TokenKind kind);
 AstNode * processSentence(FILE *fp, AstNode *ret, TokenKind kind);
 
 AstNode * getLotsOFVarList(FILE *fp, AstNode *ret);
+
+AstNode * getLotsOFExpressionList(FILE *fp, AstNode *ret);
 
 AstNode * getLotsOfSentence(FILE *fp, AstNode *ret, TokenKind kind);
 

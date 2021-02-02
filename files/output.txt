@@ -1,10 +1,12 @@
 #include "stdio.h"
 #define PI (3.14159- 1+1.0)
 char a; 
-int a, b, c, d; 
+int a, b, c, d[122], d; 
 float e, f; 
 int ack_nie; 
 char __gg; 
+int getc(int a);
+int f();
 char fun(int a, float b, char c) {
     int a; 
     char a; 
@@ -13,12 +15,13 @@ char fun(int a, float b, char c) {
     int ack_123nie; 
     char __gg; 
     a = n;
-    a = b = c = d = e * f && (a >= 1) || 'c' - 2 < 3.0 != d;
-    if (a) {
+    a[1 + i] = b = c = d = e * f && (a >= 1) || 'c' - 2 < 3.0 != d;
+    if (a % 100 == 3) {
         a = b;
     } else if (c - d > 0 && d == 'c') {
         int q; 
-        q = q - 3;
+        b = b[2];
+        a = q(2, d = 4 % 1 && 2, 4) + g() - a[d = 4 % 1 - b[2] && 2];
     } else if (a == 100) {
         return b;
     } else {

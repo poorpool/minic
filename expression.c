@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include "expression.h"
+#include "print.h"
 extern int lineNumber;
 extern TokenKind tokenKind;
 extern char tokenText[];
@@ -14,26 +15,18 @@ extern char tokenText[];
  * */
 
 AstNode * actualExpression(FILE *fp, AstNode * ret, TokenKind kind) {
-    if (kind == IDENT) {
-        char *tmp = (char *)malloc(strlen(tokenText)+1);
-        strcpy(tmp, tokenText);
+    AstNode * orExp = orExpression(fp, newNode(), kind);
+
+    if (tokenKind == ASSIGN) {
+        ret = allocSons(ret, 3);
+        ret->type = ACTUAL_EXPRESSION;
+        ret->son[0] = orExp;
+        ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(ASSIGN));
         tokenKind = getToken(fp);
-        if (tokenKind == ASSIGN) {
-            ret = allocSons(ret, 3);
-            ret->type = ACTUAL_EXPRESSION;
-            ret->son[0] = setAstNodeText(ret->son[0], tokenText);
-            ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(ASSIGN));
-            tokenKind = getToken(fp);
-            ret->son[2] = actualExpression(fp, ret->son[2], tokenKind);
-            return ret;
-        } else {
-            unGetToken(fp, tokenKind);
-            tokenKind = IDENT;
-            strcpy(tokenText, tmp);
-            return orExpression(fp, ret, tokenKind);
-        }
+        ret->son[2] = actualExpression(fp, ret->son[2], tokenKind);
+        return ret;
     } else {
-        return orExpression(fp, ret, kind);
+        return orExp;
     }
 }
 
@@ -58,6 +51,9 @@ AstNode * orExpression_(FILE *fp, AstNode * ret, TokenKind kind) {
             break;
         case SEMI:
         case RP:
+        case COMMA:
+        case RBRACKET:
+        case ASSIGN:
             freeNode(ret);
             return NULL;
             break;
@@ -89,6 +85,9 @@ AstNode * andExpression_(FILE *fp, AstNode * ret, TokenKind kind) {
         case LOGIC_OR:
         case SEMI:
         case RP:
+        case COMMA:
+        case RBRACKET:
+        case ASSIGN:
             freeNode(ret);
             return NULL;
             break;
@@ -128,6 +127,9 @@ AstNode * equalExpression_(FILE *fp, AstNode * ret, TokenKind kind) {
         case LOGIC_OR:
         case SEMI:
         case RP:
+        case COMMA:
+        case RBRACKET:
+        case ASSIGN:
             freeNode(ret);
             return NULL;
             break;
@@ -183,6 +185,9 @@ AstNode * compareExpression_(FILE *fp, AstNode * ret, TokenKind kind) {
         case LOGIC_OR:
         case SEMI:
         case RP:
+        case COMMA:
+        case RBRACKET:
+        case ASSIGN:
             freeNode(ret);
             return NULL;
             break;
@@ -228,6 +233,9 @@ AstNode * expression_(FILE *fp, AstNode * ret, TokenKind kind) {
         case LOGIC_OR:
         case SEMI:
         case RP:
+        case COMMA:
+        case RBRACKET:
+        case ASSIGN:
             freeNode(ret);
             return NULL;
             break;
@@ -282,6 +290,9 @@ AstNode * term_(FILE *fp, AstNode * ret, TokenKind kind) {
         case LOGIC_OR:
         case SEMI:
         case RP:
+        case COMMA:
+        case RBRACKET:
+        case ASSIGN:
             freeNode(ret);
             return NULL;
             break;
@@ -290,6 +301,8 @@ AstNode * term_(FILE *fp, AstNode * ret, TokenKind kind) {
             return NULL;
     }
 }
+
+char tmp[1024];
 
 AstNode * factor(FILE *fp, AstNode * ret, TokenKind kind) {
     ret->type = FACTOR;
@@ -306,6 +319,34 @@ AstNode * factor(FILE *fp, AstNode * ret, TokenKind kind) {
             ret->son[2] = setAstNodeText(ret->son[2], getTokenKindStr(RP));
             break;
         case IDENT:
+            strcpy(tmp, tokenText);
+            tokenKind = getToken(fp);
+            if (tokenKind == LP) {
+                ret = allocSons(ret, 4);
+                ret->son[0] = setAstNodeText(ret->son[0], tmp);
+                ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(LP));
+                ret->son[2] = getLotsOFExpressionList(fp, ret->son[2]);
+                if (tokenKind != RP) {
+                    panic("factor want a )!");
+                    return NULL;
+                }
+                ret->son[3] = setAstNodeText(ret->son[3], getTokenKindStr(RP));
+            } else if (tokenKind == LBRACKET) {
+                ret = allocSons(ret, 4);
+                ret->son[0] = setAstNodeText(ret->son[0], tmp);
+                ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(LBRACKET));
+                tokenKind = getToken(fp);
+                ret->son[2] = actualExpression(fp, ret->son[2], tokenKind);
+                if (tokenKind != RBRACKET) {
+                    panic("factor want a ]!");
+                    return NULL;
+                }
+                ret->son[3] = setAstNodeText(ret->son[3], getTokenKindStr(RBRACKET));
+            } else {
+                unGetToken(fp, tokenKind);
+                ret = setAstNodeText(ret, tmp);
+            }
+            break;
         case INT_CONST:
         case FLOAT_CONST:
         case CHAR_CONST:

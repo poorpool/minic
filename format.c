@@ -86,10 +86,10 @@ void freeNode(AstNode *p) {
 // 处理变量序列，要传进来一个当前读到的 TokenKind，要是分号或者是逗号，并且把标识符放到 tokenTextTmp 里
 // 注意不含类型（int, float, char）
 // 不会多读
-AstNode * processVarList(FILE *fp, AstNode *ret, TokenKind kind) {
+AstNode * processVarList(FILE *fp, AstNode *ret, AstNode *lson, TokenKind kind) {
     if (kind == COMMA) {
         ret = allocSons(ret, 3);
-        ret->son[0] = setAstNodeText(ret->son[0], tokenTextTmp);
+        ret->son[0] = lson;
         ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(COMMA));
         tokenKind = getToken(fp);
         if (tokenKind != IDENT) {
@@ -98,13 +98,34 @@ AstNode * processVarList(FILE *fp, AstNode *ret, TokenKind kind) {
         }
         strcpy(tokenTextTmp, tokenText);
         tokenKind = getToken(fp);
+        lson = newNode();
+        if (tokenKind == LBRACKET) {
+            lson = allocSons(lson, 4);
+            lson->son[0] = setAstNodeText(lson->son[0], tokenTextTmp);
+            lson->son[1] = setAstNodeText(lson->son[1], getTokenKindStr(LBRACKET));
+            tokenKind = getToken(fp);
+            if (tokenKind != INT_CONST) {
+                panic("define array must has int size!");
+                return NULL;
+            }
+            lson->son[2] = setAstNodeText(lson->son[2], tokenText);
+            tokenKind = getToken(fp);
+            if (tokenKind != RBRACKET) {
+                panic("want a ]!");
+                return NULL;
+            }
+            lson->son[3] = setAstNodeText(lson->son[3], getTokenKindStr(RBRACKET));
+            tokenKind = getToken(fp);
+        } else {
+            lson = setAstNodeText(lson, tokenTextTmp);
+        }
         if (tokenKind == COMMA || tokenKind == SEMI) {
-            ret->son[2] = processVarList(fp, ret->son[2], tokenKind);
+            ret->son[2] = processVarList(fp, ret->son[2], lson, tokenKind);
             return ret;
         }
     } else if (tokenKind == SEMI) {
         ret = allocSons(ret, 2);
-        ret->son[0] = setAstNodeText(ret->son[0], tokenTextTmp);
+        ret->son[0] = lson;
         ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(SEMI));
         return ret;
     } else {
@@ -161,9 +182,55 @@ AstNode * getLotsOFVarList(FILE *fp, AstNode *ret) {
         panic("Want an identifier!\n");
         return NULL;
     }
+    AstNode * lson = newNode();
     tokenKind = getToken(fp);
-    ret->son[0]->son[1] = processVarList(fp, ret->son[0]->son[1], tokenKind);
+    if (tokenKind == LBRACKET) {
+        lson = allocSons(lson, 4);
+        lson->son[0] = setAstNodeText(lson->son[0], tokenTextTmp);
+        lson->son[1] = setAstNodeText(lson->son[1], getTokenKindStr(LBRACKET));
+        tokenKind = getToken(fp);
+        if (tokenKind != INT_CONST) {
+            panic("define array must has int size!");
+            return NULL;
+        }
+        lson->son[2] = setAstNodeText(lson->son[2], tokenText);
+        tokenKind = getToken(fp);
+        if (tokenKind != RBRACKET) {
+            panic("want a ]!");
+            return NULL;
+        }
+        lson->son[3] = setAstNodeText(lson->son[3], getTokenKindStr(RBRACKET));
+        tokenKind = getToken(fp);
+    } else {
+        lson = setAstNodeText(lson, tokenTextTmp);
+    }
+    ret->son[0]->son[1] = processVarList(fp, ret->son[0]->son[1], lson, tokenKind);
     ret->son[1] = getLotsOFVarList(fp, ret->son[1]);
+    return ret;
+}
+
+// 得到许多表达式序列，用于实参
+// 最后会多读一个
+AstNode * getLotsOFExpressionList(FILE *fp, AstNode *ret) {
+    tokenKind = getToken(fp);
+    if (tokenKind == RP) {
+        freeNode(ret);
+        return NULL;
+    }
+    ret = allocSons(ret, 2);
+    ret->son[0] = allocSons(ret->son[0], 2);
+    ret->son[0]->son[0] = actualExpression(fp, ret->son[0]->son[0], tokenKind);
+    if (tokenKind != COMMA && tokenKind != RP) {
+        panic("Confusing expression separator!");
+        return NULL;
+    }
+    if (tokenKind == COMMA) {
+        ret->son[0]->son[1] = setAstNodeText(ret->son[0]->son[1], getTokenKindStr(COMMA));
+        ret->son[1] = getLotsOFExpressionList(fp, ret->son[1]);
+    } else {
+        ret->son[0]->son[1] = NULL;
+        ret->son[1] = NULL;
+    }
     return ret;
 }
 
@@ -464,10 +531,31 @@ AstNode * processExtDef(FILE *fp) {
                 return NULL;
             }
             strcpy(tokenTextTmp, tokenText);
+            AstNode * lson = newNode();
             tokenKind = getToken(fp);
+            if (tokenKind == LBRACKET) {
+                lson = allocSons(lson, 4);
+                lson->son[0] = setAstNodeText(lson->son[0], tokenTextTmp);
+                lson->son[1] = setAstNodeText(lson->son[1], getTokenKindStr(LBRACKET));
+                tokenKind = getToken(fp);
+                if (tokenKind != INT_CONST) {
+                    panic("define array must has int size!");
+                    return NULL;
+                }
+                lson->son[2] = setAstNodeText(lson->son[2], tokenText);
+                tokenKind = getToken(fp);
+                if (tokenKind != RBRACKET) {
+                    panic("want a ]!");
+                    return NULL;
+                }
+                lson->son[3] = setAstNodeText(lson->son[3], getTokenKindStr(RBRACKET));
+                tokenKind = getToken(fp);
+            } else {
+                lson = setAstNodeText(lson, tokenTextTmp);
+            }
             if (tokenKind == COMMA || tokenKind == SEMI) {
                 ret->type = VAR_LIST;
-                ret->son[1] = processVarList(fp, ret->son[1], tokenKind);
+                ret->son[1] = processVarList(fp, ret->son[1], lson, tokenKind);
                 return ret;
             } else if (tokenKind == LP) {
                 ret->son[1] = allocSons(ret->son[1], 5);

@@ -2,13 +2,14 @@
 // Created by poorpool on 2021/1/30.
 //
 
+#include <string.h>
 #include "print.h"
 
 // 打印变量序列
 // 注意不包含类型
 void printVarList(FILE *outfp, AstNode *p) {
-    fprintf(outfp, "%s", p->son[0]->text);
-    fprintf(outfp, "%s", p->son[1]->text);
+    printNode(outfp, p->son[0], 0);
+    printNode(outfp, p->son[1], 0);
     fprintf(outfp, " ");
     if (p->num == 3) {
         printVarList(outfp, p->son[2]);
@@ -17,10 +18,14 @@ void printVarList(FILE *outfp, AstNode *p) {
 
 // 打印形参序列
 void printFormalArgList(FILE *outfp, AstNode *p) {
-    fprintf(outfp, "%s", p->son[0]->text);
-    fprintf(outfp, " %s", p->son[1]->text);
+    if (p == NULL) {
+        return ;
+    }
+    printNode(outfp, p->son[0], 0);
+    fprintf(outfp, " ");
+    printNode(outfp, p->son[1], 0);
     if (p->num == 4) {
-        fprintf(outfp, "%s", p->son[2]->text);
+        printNode(outfp, p->son[2], 0);
         fprintf(outfp, " ");
         printFormalArgList(outfp, p->son[3]);
     }
@@ -41,14 +46,28 @@ void printLotsOfVarList(FILE *outfp, AstNode *p, int iden) {
     }
 }
 
+void printLotsOfExpression(FILE *outfp, AstNode *p) {
+    if (p == NULL) {
+        return ;
+    }
+    printExpression(outfp, p->son[0]->son[0]);
+    if (p->son[1] != NULL) {
+        printNode(outfp, p->son[0]->son[1], 0);
+        fprintf(outfp, " ");
+        printLotsOfExpression(outfp, p->son[1]);
+    }
+}
+
 void printExpression(FILE *outfp, AstNode *p) {
     if (p == NULL) {
         return ;
     }
     switch (p->type) {
         case ACTUAL_EXPRESSION:
-            fprintf(outfp, "%s", p->son[0]->text);
-            fprintf(outfp, " %s ", p->son[1]->text);
+            printExpression(outfp, p->son[0]);
+            fprintf(outfp, " ");
+            printNode(outfp, p->son[1], 0);
+            fprintf(outfp, " ");
             printExpression(outfp, p->son[2]);
             break;
         case OR_EXPRESSION:
@@ -66,15 +85,26 @@ void printExpression(FILE *outfp, AstNode *p) {
         case COMPARE_EXPRESSION_:
         case EXPRESSION_:
         case TERM_:
-            fprintf(outfp, " %s ", p->son[0]->text);
+            fprintf(outfp, " ");
+            printNode(outfp, p->son[0], 0);
+            fprintf(outfp, " ");
             printExpression(outfp, p->son[1]);
             printExpression(outfp, p->son[2]);
             break;
         case FACTOR:
             if (p->num == 3) {
-                fprintf(outfp, "%s", p->son[0]->text);
+                printNode(outfp, p->son[0], 0);
                 printExpression(outfp, p->son[1]);
-                fprintf(outfp, "%s", p->son[2]->text);
+                printNode(outfp, p->son[2], 0);
+            } else if (p->num == 4){
+                printNode(outfp, p->son[0], 0);
+                printNode(outfp, p->son[1], 0);
+                if (strcmp(p->son[1]->text, getTokenKindStr(LBRACKET)) == 0) {
+                    printExpression(outfp, p->son[2]);
+                } else {
+                    printLotsOfExpression(outfp, p->son[2]);
+                }
+                printNode(outfp, p->son[3], 0);
             } else {
                 printNode(outfp, p, 0);
             }
@@ -88,21 +118,25 @@ void printIf(FILE *outfp, AstNode *p, int iden) {
     }
     if (p->type == IF_STATEMENT) {
         printIndentation(outfp, iden);
-        fprintf(outfp, "%s", p->son[0]->text);
-        fprintf(outfp, " %s", p->son[1]->text);
+        printNode(outfp, p->son[0], 0);
+        fprintf(outfp, " ");
+        printNode(outfp, p->son[1], 0);
         printExpression(outfp, p->son[2]);
-        fprintf(outfp, "%s", p->son[3]->text);
+        printNode(outfp, p->son[3], 0);
         printCompoundStatement(outfp, p->son[4], iden);
         printIf(outfp, p->son[5], iden);
     } else if (p->type == ELSE_IF_STATEMENT) {
-        fprintf(outfp, " %s", p->son[0]->text);
-        fprintf(outfp, " %s", p->son[1]->text);
+        fprintf(outfp, " ");
+        printNode(outfp, p->son[0], 0);
+        fprintf(outfp, " ");
+        printNode(outfp, p->son[1], 0);
         printExpression(outfp, p->son[2]);
-        fprintf(outfp, "%s", p->son[3]->text);
+        printNode(outfp, p->son[3], 0);
         printCompoundStatement(outfp, p->son[4], iden);
         printIf(outfp, p->son[5], iden);
     } else {
-        fprintf(outfp, " %s", p->son[0]->text);
+        fprintf(outfp, " ");
+        printNode(outfp, p->son[0], 0);
         printCompoundStatement(outfp, p->son[1], iden);
     }
 }
@@ -171,11 +205,13 @@ void printLotsOfSentence(FILE *outfp, AstNode *p, int iden) {
 
 // 打印 {} 包裹的复合语句
 void printCompoundStatement(FILE *outfp, AstNode *p, int iden) {
-    fprintf(outfp, " %s\n", p->son[0]->text);
+    fprintf(outfp, " ");
+    printNode(outfp, p->son[0], 0);
+    fprintf(outfp, "\n");
     printLotsOfVarList(outfp, p->son[1], iden+1);
     printLotsOfSentence(outfp, p->son[2], iden+1);
     printIndentation(outfp, iden);
-    fprintf(outfp, "%s", p->son[3]->text);
+    printNode(outfp, p->son[3], 0);
 }
 
 // 打印缩进
