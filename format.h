@@ -17,6 +17,9 @@ typedef enum {
     EXT_FUN_STATEMEMT, // 外部函数声明。int fun_name(形参序列);
     EXT_FUN_DEFINITION, // 外部函数定义，int fun_name(形参序列) 复合语句
     COMPOUND_STATEMENT, // 复合语句，{ 许多变量定义 许多语句 }
+    IF_STATEMENT,
+    ELSE_IF_STATEMENT,
+    ELSE_STATEMENT,
 
     // 下面是表达式解析用到的 type，具体看文档
     ACTUAL_EXPRESSION,
@@ -63,6 +66,8 @@ AstNode * processExtDefList(FILE *fp);
 AstNode * processVarList(FILE *fp, AstNode *ret, TokenKind kind);
 
 AstNode * processFormalArgList(FILE *fp, AstNode *ret, TokenKind kind);
+
+AstNode * processIf(FILE *fp, AstNode *ret, TokenKind kind);
 
 AstNode * processSentence(FILE *fp, AstNode *ret, TokenKind kind);
 

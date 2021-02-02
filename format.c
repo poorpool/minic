@@ -167,16 +167,94 @@ AstNode * getLotsOFVarList(FILE *fp, AstNode *ret) {
     return ret;
 }
 
+// 处理 if，else if，else
+// 不会多读
+AstNode * processIf(FILE *fp, AstNode *ret, TokenKind kind) {
+    if (kind == IF) {
+        ret = allocSons(ret, 6);
+        ret->type = IF_STATEMENT;
+        ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(IF));
+        tokenKind = getToken(fp);
+        if (tokenKind != LP) {
+            panic("Want a (!\n");
+            return NULL;
+        }
+        ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(LP));
+        tokenKind = getToken(fp);
+        ret->son[2] = actualExpression(fp, ret->son[2], tokenKind);
+        if (tokenKind != RP) {
+            panic("Want a )!\n");
+            return NULL;
+        }
+        ret->son[3] = setAstNodeText(ret->son[3], getTokenKindStr(RP));
+        tokenKind = getToken(fp);
+        if (tokenKind != LBRACE) {
+            panic("Want a {!\n");
+            return NULL;
+        }
+        ret->son[4] = processCompoundStatement(fp, ret->son[4]);
+        tokenKind = getToken(fp);
+        ret->son[5] = processIf(fp, ret->son[5], tokenKind);
+        return ret;
+    } else if (kind == ELSE) {
+        tokenKind = getToken(fp);
+        if (tokenKind == IF) {
+            ret = allocSons(ret, 6);
+            ret->type = ELSE_IF_STATEMENT;
+            ret->son[0] = setAstNodeText(ret->son[0], "else if"); // 硬编码，，，
+            tokenKind = getToken(fp);
+            if (tokenKind != LP) {
+                panic("Want a (!\n");
+                return NULL;
+            }
+            ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(LP));
+            tokenKind = getToken(fp);
+            ret->son[2] = actualExpression(fp, ret->son[2], tokenKind);
+            if (tokenKind != RP) {
+                panic("Want a )!\n");
+                return NULL;
+            }
+            ret->son[3] = setAstNodeText(ret->son[3], getTokenKindStr(RP));
+            tokenKind = getToken(fp);
+            if (tokenKind != LBRACE) {
+                panic("Want a {!\n");
+                return NULL;
+            }
+            ret->son[4] = processCompoundStatement(fp, ret->son[4]);
+            tokenKind = getToken(fp);
+            ret->son[5] = processIf(fp, ret->son[5], tokenKind);
+            return ret;
+        } else if (tokenKind == LBRACE) {
+            ret = allocSons(ret, 2);
+            ret->type = ELSE_STATEMENT;
+            ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(ELSE));
+            ret->son[1] = processCompoundStatement(fp, ret->son[1]);
+            return ret;
+        } else {
+            panic("Confusing type after else!");
+            return NULL;
+        }
+    } else {
+        unGetToken(fp, kind);
+        return NULL;
+    }
+}
+
 // 处理一条语句
 // 不会多读
 AstNode * processSentence(FILE *fp, AstNode *ret, TokenKind kind) {
-    ret = allocSons(ret, 2);
-    ret->son[0] = actualExpression(fp, ret->son[0], kind);
-    if (tokenKind != SEMI) {
-        panic("Want a ;!");
-        return NULL;
+    switch (kind) {
+        case IF:
+            return processIf(fp, ret, kind);
+        default:
+            ret = allocSons(ret, 2);
+            ret->son[0] = actualExpression(fp, ret->son[0], kind);
+            if (tokenKind != SEMI) {
+                panic("Want a ;!");
+                return NULL;
+            }
+            ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(SEMI));
     }
-    ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(SEMI));
     return ret;
 }
 

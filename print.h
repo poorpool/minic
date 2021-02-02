@@ -9,6 +9,8 @@
 
 void printIndentation(FILE *outfp, int iden);
 
+void printCompoundStatement(FILE *outfp, AstNode *p, int iden);
+
 void printNode(FILE *outfp, AstNode *p, int iden);
 
 #endif //MINIC_PRINT_H

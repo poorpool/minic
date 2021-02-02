@@ -82,15 +82,47 @@ void printExpression(FILE *outfp, AstNode *p) {
     }
 }
 
+void printIf(FILE *outfp, AstNode *p, int iden) {
+    if (p == NULL) {
+        return;
+    }
+    if (p->type == IF_STATEMENT) {
+        printIndentation(outfp, iden);
+        fprintf(outfp, "%s", p->son[0]->text);
+        fprintf(outfp, " %s", p->son[1]->text);
+        printExpression(outfp, p->son[2]);
+        fprintf(outfp, "%s", p->son[3]->text);
+        printCompoundStatement(outfp, p->son[4], iden);
+        printIf(outfp, p->son[5], iden);
+    } else if (p->type == ELSE_IF_STATEMENT) {
+        fprintf(outfp, " %s", p->son[0]->text);
+        fprintf(outfp, " %s", p->son[1]->text);
+        printExpression(outfp, p->son[2]);
+        fprintf(outfp, "%s", p->son[3]->text);
+        printCompoundStatement(outfp, p->son[4], iden);
+        printIf(outfp, p->son[5], iden);
+    } else {
+        fprintf(outfp, " %s", p->son[0]->text);
+        printCompoundStatement(outfp, p->son[1], iden);
+    }
+}
+
 // 打印许多语句
 void printLotsOfSentence(FILE *outfp, AstNode *p, int iden) {
     if (p == NULL) {
         return ;
     }
-    printIndentation(outfp, iden);
     //printNode(outfp, p->son[0]->son[0], iden); 打印表达式序列，先这么写吧
-    printExpression(outfp, p->son[0]->son[0]);
-    printNode(outfp, p->son[0]->son[1], iden);// 打印分号
+    switch (p->son[0]->type) {
+        case IF_STATEMENT:
+            printf("will print if\n");
+            printIf(outfp, p->son[0], iden);
+            break;
+        default:
+            printIndentation(outfp, iden);
+            printExpression(outfp, p->son[0]->son[0]);
+            printNode(outfp, p->son[0]->son[1], iden);// 打印分号
+    }
     fprintf(outfp, "\n");
     if (p->son[1] != NULL) {
         printLotsOfSentence(outfp, p->son[1], iden);
@@ -102,6 +134,7 @@ void printCompoundStatement(FILE *outfp, AstNode *p, int iden) {
     fprintf(outfp, " %s\n", p->son[0]->text);
     printLotsOfVarList(outfp, p->son[1], iden+1);
     printLotsOfSentence(outfp, p->son[2], iden+1);
+    printIndentation(outfp, iden);
     fprintf(outfp, "%s", p->son[3]->text);
 }
 

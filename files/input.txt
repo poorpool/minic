@@ -13,4 +13,23 @@ char fun         (int a, float b, char c) {int a;  char a;
                          a = b = c = d =
                           e * f && (a
                     >= 1) || 'c' - 2
-                        < 3.0 != d;}
+                        < 3.0 != d;
+                        if (a) {
+                            a = b;
+                        } else if (c-d > 0 && d == 'c') {
+                            int q;
+                            q = q - 3;
+                        }
+                        else {
+                            int a;
+                        }
+                    }
+
+                    int i,j;
+                    	int fun(int a, float b)
+                    	{
+                    	int m;
+                    	if (a>b){ m=a;}
+                    	else {m=b;}
+                    	}
+                    	float x,y;
