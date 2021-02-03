@@ -8,10 +8,13 @@
 // 打印变量序列
 // 注意不包含类型
 void printVarList(FILE *outfp, AstNode *p) {
+    if (p == NULL) {
+        return ;
+    }
     printNode(outfp, p->son[0], 0);
     printNode(outfp, p->son[1], 0);
-    fprintf(outfp, " ");
-    if (p->num == 3) {
+    if (p->son[2] != NULL) {
+        fprintf(outfp, " ");
         printVarList(outfp, p->son[2]);
     }
 }
@@ -96,17 +99,13 @@ void printExpression(FILE *outfp, AstNode *p) {
                 printNode(outfp, p->son[0], 0);
                 printExpression(outfp, p->son[1]);
                 printNode(outfp, p->son[2], 0);
-            } else if (p->num == 4){
+            } else if (p->num == 4) {
                 printNode(outfp, p->son[0], 0);
                 printNode(outfp, p->son[1], 0);
-                if (strcmp(p->son[1]->text, getTokenKindStr(LBRACKET)) == 0) {
-                    printExpression(outfp, p->son[2]);
-                } else {
-                    printLotsOfExpression(outfp, p->son[2]);
-                }
+                printLotsOfExpression(outfp, p->son[2]);
                 printNode(outfp, p->son[3], 0);
             } else {
-                printNode(outfp, p, 0);
+                printNode(outfp, p, 0); // 包括了数组的情况
             }
             break;
     }
@@ -221,6 +220,21 @@ void printIndentation(FILE *outfp, int iden) {
     }
 }
 
+void printIdentOrArray(FILE *outfp, AstNode *p) {
+    if (p == NULL) {
+        return ;
+    }
+    if (p->num == 2) {
+        printNode(outfp, p->son[0], 0);
+        printIdentOrArray(outfp, p->son[1]);
+    } else {
+        printNode(outfp, p->son[0], 0);
+        printExpression(outfp, p->son[1]);
+        printNode(outfp, p->son[2], 0);
+        printIdentOrArray(outfp, p->son[3]);
+    }
+}
+
 // 打印结点
 void printNode(FILE *outfp, AstNode *p, int iden) {
     if (p == NULL) {
@@ -276,6 +290,9 @@ void printNode(FILE *outfp, AstNode *p, int iden) {
             printNode(outfp, p->son[1]->son[3], iden);
             printCompoundStatement(outfp, p->son[1]->son[4], iden);
             fprintf(outfp, "\n");
+            break;
+        case IDENT_OR_ARRAY:
+            printIdentOrArray(outfp, p);
             break;
         default:
             for (int i = 0; i < p->num; i++) {

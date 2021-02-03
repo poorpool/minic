@@ -83,56 +83,39 @@ void freeNode(AstNode *p) {
     free(p);
 }
 
-// 处理变量序列，要传进来一个当前读到的 TokenKind，要是分号或者是逗号，并且把标识符放到 tokenTextTmp 里
-// 注意不含类型（int, float, char）
-// 不会多读
-AstNode * processVarList(FILE *fp, AstNode *ret, AstNode *lson, TokenKind kind) {
-    if (kind == COMMA) {
-        ret = allocSons(ret, 3);
-        ret->son[0] = lson;
-        ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(COMMA));
+AstNode * getIdentOrArray(FILE *fp, AstNode *ret, TokenKind kind) {
+    if (kind == IDENT) {
+        ret = allocSons(ret, 2);
+        ret->type = IDENT_OR_ARRAY;
+        ret->son[0] = setAstNodeText(ret->son[0], tokenText);
         tokenKind = getToken(fp);
-        if (tokenKind != IDENT) {
-            panic("Doesn't get an identifier!");
+        if (tokenKind == IDENT) {
+            panic("Identifier shouldn't be followed by identifier!");
             return NULL;
         }
-        strcpy(tokenTextTmp, tokenText);
+        ret->son[1] = getIdentOrArray(fp, ret->son[1], tokenKind);
+        return ret;
+    } else if (kind == LBRACKET) {
+        ret = allocSons(ret, 4);
+        ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(LBRACKET));
         tokenKind = getToken(fp);
-        lson = newNode();
-        if (tokenKind == LBRACKET) {
-            lson = allocSons(lson, 4);
-            lson->son[0] = setAstNodeText(lson->son[0], tokenTextTmp);
-            lson->son[1] = setAstNodeText(lson->son[1], getTokenKindStr(LBRACKET));
-            tokenKind = getToken(fp);
-            if (tokenKind != INT_CONST) {
-                panic("define array must has int size!");
-                return NULL;
-            }
-            lson->son[2] = setAstNodeText(lson->son[2], tokenText);
-            tokenKind = getToken(fp);
-            if (tokenKind != RBRACKET) {
-                panic("want a ]!");
-                return NULL;
-            }
-            lson->son[3] = setAstNodeText(lson->son[3], getTokenKindStr(RBRACKET));
-            tokenKind = getToken(fp);
-        } else {
-            lson = setAstNodeText(lson, tokenTextTmp);
+        ret->son[1] = actualExpression(fp, ret->son[1], tokenKind);
+        if (tokenKind != RBRACKET) {
+            panic("Want a ]!");
+            return NULL;
         }
-        if (tokenKind == COMMA || tokenKind == SEMI) {
-            ret->son[2] = processVarList(fp, ret->son[2], lson, tokenKind);
-            return ret;
+        ret->son[2] = setAstNodeText(ret->son[2], getTokenKindStr(RBRACKET));
+        tokenKind = getToken(fp);
+        if (tokenKind == IDENT) {
+            panic("Array shouldn't be followed by identifier!");
+            return NULL;
         }
-    } else if (tokenKind == SEMI) {
-        ret = allocSons(ret, 2);
-        ret->son[0] = lson;
-        ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(SEMI));
+        ret->son[3] = getIdentOrArray(fp, ret->son[3], tokenKind);
         return ret;
     } else {
-        panic("Var list cannot end!");
+        unGetToken(fp, kind);
         return NULL;
     }
-    return ret;
 }
 
 // 处理形式参数序列
@@ -142,22 +125,22 @@ AstNode * processFormalArgList(FILE *fp, AstNode *ret, TokenKind kind) {
     if (kind == INT || kind == FLOAT || kind == CHAR) {
         tokenKind = getToken(fp);
         if (tokenKind != IDENT) {
-            panic("Confusing data type!\n");
+            panic("Want an identifier!\n");
             return NULL;
         }
-        strcpy(tokenTextTmp, tokenText);
+        AstNode *lson = getIdentOrArray(fp, newNode(), tokenKind);
         tokenKind = getToken(fp);
         if (tokenKind == COMMA) {
             ret = allocSons(ret, 4);
             ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(kind));
-            ret->son[1] = setAstNodeText(ret->son[1], tokenTextTmp);
+            ret->son[1] = lson;
             ret->son[2] = setAstNodeText(ret->son[2], getTokenKindStr(COMMA));
             tokenKind = getToken(fp);
             ret->son[3] = processFormalArgList(fp, ret->son[3], tokenKind);
         } else {
             ret = allocSons(ret, 2);
             ret->son[0] = setAstNodeText(ret->son[0], getTokenKindStr(kind));
-            ret->son[1] = setAstNodeText(ret->son[1], tokenTextTmp);
+            ret->son[1] = lson;
         }
         return ret;
     } else {
@@ -165,46 +148,43 @@ AstNode * processFormalArgList(FILE *fp, AstNode *ret, TokenKind kind) {
     }
 }
 
+// 得到一个不含类型的变量序列 a, b, c;
+// 不会多读
+AstNode * processVarList(FILE *fp, AstNode *ret) {
+    ret = allocSons(ret, 3);
+    tokenKind = getToken(fp);
+    if (tokenKind != IDENT) {
+        panic("Want an identifier!");
+        return NULL;
+    }
+    ret->son[0] = getIdentOrArray(fp, ret->son[0], tokenKind);
+    tokenKind = getToken(fp);
+    if (tokenKind == COMMA) {
+        ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(COMMA));
+        ret->son[2] = processVarList(fp, ret->son[2]);
+        return ret;
+    } else if (tokenKind == SEMI) {
+        ret->son[1] = setAstNodeText(ret->son[1], getTokenKindStr(SEMI));
+        ret->son[2] = NULL;
+        return ret;
+    } else {
+        panic("Want a , or ;!");
+        return NULL;
+    };
+}
+
 // 得到许多变量序列
 // 最后会多读一个
 AstNode * getLotsOFVarList(FILE *fp, AstNode *ret) {
     tokenKind = getToken(fp);
+    if (tokenKind != INT && tokenKind != FLOAT && tokenKind != CHAR) {
+        return NULL;
+    }
     ret = allocSons(ret, 2);
     ret->son[0] = allocSons(ret->son[0], 2);
+    ret->son[0]->type = VAR_LIST;
     ret->son[0]->son[0] = setAstNodeText(ret->son[0]->son[0], getTokenKindStr(tokenKind));
-    if (tokenKind != INT && tokenKind != FLOAT && tokenKind != CHAR) {
-        freeNode(ret);
-        return NULL;
-    }
-    tokenKind = getToken(fp);
-    strcpy(tokenTextTmp, tokenText);
-    if (tokenKind != IDENT) {
-        panic("Want an identifier!\n");
-        return NULL;
-    }
-    AstNode * lson = newNode();
-    tokenKind = getToken(fp);
-    if (tokenKind == LBRACKET) {
-        lson = allocSons(lson, 4);
-        lson->son[0] = setAstNodeText(lson->son[0], tokenTextTmp);
-        lson->son[1] = setAstNodeText(lson->son[1], getTokenKindStr(LBRACKET));
-        tokenKind = getToken(fp);
-        if (tokenKind != INT_CONST) {
-            panic("define array must has int size!");
-            return NULL;
-        }
-        lson->son[2] = setAstNodeText(lson->son[2], tokenText);
-        tokenKind = getToken(fp);
-        if (tokenKind != RBRACKET) {
-            panic("want a ]!");
-            return NULL;
-        }
-        lson->son[3] = setAstNodeText(lson->son[3], getTokenKindStr(RBRACKET));
-        tokenKind = getToken(fp);
-    } else {
-        lson = setAstNodeText(lson, tokenTextTmp);
-    }
-    ret->son[0]->son[1] = processVarList(fp, ret->son[0]->son[1], lson, tokenKind);
+    ret->son[0]->son[1] = processVarList(fp, ret->son[0]->son[1]);
     ret->son[1] = getLotsOFVarList(fp, ret->son[1]);
     return ret;
 }
@@ -530,36 +510,26 @@ AstNode * processExtDef(FILE *fp) {
                 panic("Doesn't get an identifier!");
                 return NULL;
             }
-            strcpy(tokenTextTmp, tokenText);
-            AstNode * lson = newNode();
+            AstNode * lson = getIdentOrArray(fp, newNode(), tokenKind);
             tokenKind = getToken(fp);
-            if (tokenKind == LBRACKET) {
-                lson = allocSons(lson, 4);
-                lson->son[0] = setAstNodeText(lson->son[0], tokenTextTmp);
-                lson->son[1] = setAstNodeText(lson->son[1], getTokenKindStr(LBRACKET));
-                tokenKind = getToken(fp);
-                if (tokenKind != INT_CONST) {
-                    panic("define array must has int size!");
-                    return NULL;
-                }
-                lson->son[2] = setAstNodeText(lson->son[2], tokenText);
-                tokenKind = getToken(fp);
-                if (tokenKind != RBRACKET) {
-                    panic("want a ]!");
-                    return NULL;
-                }
-                lson->son[3] = setAstNodeText(lson->son[3], getTokenKindStr(RBRACKET));
-                tokenKind = getToken(fp);
-            } else {
-                lson = setAstNodeText(lson, tokenTextTmp);
+            if (lson->son[1] != NULL && tokenKind != COMMA && tokenKind != SEMI) {
+                panic("Want , or ; after array!");
+                return NULL;
             }
             if (tokenKind == COMMA || tokenKind == SEMI) {
                 ret->type = VAR_LIST;
-                ret->son[1] = processVarList(fp, ret->son[1], lson, tokenKind);
+                ret->son[1] = allocSons(ret->son[1], 3);
+                ret->son[1]->son[0] = lson;
+                ret->son[1]->son[1] = setAstNodeText(ret->son[1]->son[1], getTokenKindStr(tokenKind));
+                if (tokenKind == SEMI) {
+                    ret->son[1]->son[2] = NULL;
+                } else {
+                    ret->son[1]->son[2] = processVarList(fp, ret->son[1]->son[2]);
+                }
                 return ret;
             } else if (tokenKind == LP) {
                 ret->son[1] = allocSons(ret->son[1], 5);
-                ret->son[1]->son[0] = setAstNodeText(ret->son[1]->son[0], tokenTextTmp);
+                ret->son[1]->son[0] = lson;
                 ret->son[1]->son[1] = setAstNodeText(ret->son[1]->son[1], getTokenKindStr(LP));
                 tokenKind = getToken(fp);
                 ret->son[1]->son[2] = processFormalArgList(fp, ret->son[1]->son[2], tokenKind);
@@ -588,6 +558,7 @@ AstNode * processExtDef(FILE *fp) {
                 panic("Confusing data type!\n");
                 return NULL;
             }
+            break;
         default:
             panic("Confusing ext type!");
             return NULL;

@@ -26,6 +26,7 @@ typedef enum {
     WHILE_STATEMENT,
     BREAK_STATEMENT,
     CONTINUE_STATEMENT,
+    IDENT_OR_ARRAY,
 
     // 下面是表达式解析用到的 type，具体看文档
     ACTUAL_EXPRESSION,
@@ -65,11 +66,13 @@ AstNode * newNode();
 
 void freeNode(AstNode *p);
 
+AstNode * getIdentOrArray(FILE *fp, AstNode *ret, TokenKind kind);
+
 AstNode * processExtDef(FILE *fp);
 
 AstNode * processExtDefList(FILE *fp);
 
-AstNode * processVarList(FILE *fp, AstNode *ret, AstNode *lson, TokenKind kind);
+AstNode * processVarList(FILE *fp, AstNode *ret);
 
 AstNode * processFormalArgList(FILE *fp, AstNode *ret, TokenKind kind);
 
