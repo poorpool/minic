@@ -40,10 +40,14 @@ void printLotsOfVarList(FILE *outfp, AstNode *p, int iden) {
         return ;
     }
     printIndentation(outfp, iden);
-    printNode(outfp, p->son[0]->son[0], iden);
-    fprintf(outfp, " ");
-    printVarList(outfp, p->son[0]->son[1]);
-    fprintf(outfp, "\n");
+    if (p->son[0]->type == COMMENT_STATEMENT) {
+        printNode(outfp, p->son[0], 0);
+    } else {
+        printNode(outfp, p->son[0]->son[0], iden);
+        fprintf(outfp, " ");
+        printVarList(outfp, p->son[0]->son[1]);
+        fprintf(outfp, "\n");
+    }
     if (p->son[1] != NULL) {
         printLotsOfVarList(outfp, p->son[1], iden);
     }
@@ -147,6 +151,10 @@ void printLotsOfSentence(FILE *outfp, AstNode *p, int iden) {
     }
     //printNode(outfp, p->son[0]->son[0], iden); 打印表达式序列，先这么写吧
     switch (p->son[0]->type) {
+        case COMMENT_STATEMENT:
+            printIndentation(outfp, iden);
+            fprintf(outfp, "%s", p->son[0]->text);
+            break;
         case IF_STATEMENT:
             printIf(outfp, p->son[0], iden);
             break;
@@ -293,6 +301,9 @@ void printNode(FILE *outfp, AstNode *p, int iden) {
             break;
         case IDENT_OR_ARRAY:
             printIdentOrArray(outfp, p);
+            break;
+        case COMMENT_STATEMENT:
+            fprintf(outfp, "\n");
             break;
         default:
             for (int i = 0; i < p->num; i++) {

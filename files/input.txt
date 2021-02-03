@@ -5,8 +5,11 @@ int a[d=4%1-2&&2][d=4%1-2&&2][d=4%1-2&&2][d=4%1-2&&2];
 int a, b,c,d[122][122+1],
 d; float e, f; int ack_nie;
 char __gg;
+// zhushi
+
 int
-getc(int a[1][2]);
+getc(int a[1][2]);/*shushi
+zhushi*/
 int f();
 char fun         (int a, float b[2][2], char c) {int a;  char a;
                                                   int a, b,
@@ -57,10 +60,13 @@ int nxt[1000005], len;
 char a[1000005];
 int mknxt(){
 	int i, j;
+	// fff
+	/*
+	zhushi zghjus*/
 	i = 0;
 	nxt[0] = j = 0-1;
 	while(i<len){
-		if(j==0-1 || a[i]==a[j]){	nxt[i=i+1] = (j=j+1);}
+		if(j==0-1 || a[i]==a[j]){	nxt[i=i+1] = (j=j+1);/*hello*/}
 		else{	j = nxt[j];}
 	}
 	return 0;
@@ -83,6 +89,7 @@ int getMin(){
 int getMax(){
 	int i, j, k;
 	i=0;j=1;k=0;
+	// ni hao
 	while(i<len && j<len && k<len){
 		int t;t=a[(i+k)%len]-a[(j+k)%len];
 		if(t==0){	k=k+1;}

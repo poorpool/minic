@@ -177,6 +177,14 @@ AstNode * processVarList(FILE *fp, AstNode *ret) {
 // 最后会多读一个
 AstNode * getLotsOFVarList(FILE *fp, AstNode *ret) {
     tokenKind = getToken(fp);
+    if (tokenKind == LINE_COMMENT || tokenKind == BLOCK_COMMENT) {
+        ret = allocSons(ret, 2);
+        ret->son[0] = allocSons(ret->son[0], 2);
+        ret->son[0]->type = COMMENT_STATEMENT;
+        ret->son[0] = setAstNodeText(ret->son[0], tokenText);
+        ret->son[1] = getLotsOFVarList(fp, ret->son[1]);
+        return ret;
+    }
     if (tokenKind != INT && tokenKind != FLOAT && tokenKind != CHAR) {
         return NULL;
     }
@@ -291,6 +299,12 @@ AstNode * processIf(FILE *fp, AstNode *ret, TokenKind kind) {
 // 不会多读
 AstNode * processSentence(FILE *fp, AstNode *ret, TokenKind kind) {
     switch (kind) {
+        case LINE_COMMENT:
+        case BLOCK_COMMENT:
+            ret->type = COMMENT_STATEMENT;
+            ret = setAstNodeText(ret, tokenText);
+            return ret;
+            break;
         case IF:
             return processIf(fp, ret, kind);
             break;
@@ -461,6 +475,12 @@ AstNode * processExtDef(FILE *fp) {
     tokenKind = getToken(fp);
     AstNode * ret = newNode();
     switch (tokenKind) {
+        case LINE_COMMENT:
+        case BLOCK_COMMENT:
+            ret->type = COMMENT_STATEMENT;
+            ret = setAstNodeText(ret, tokenText);
+            return ret;
+            break;
         case ENDOFFILE:
             return NULL;
         case SHARP:

@@ -27,6 +27,7 @@ typedef enum {
     BREAK_STATEMENT,
     CONTINUE_STATEMENT,
     IDENT_OR_ARRAY,
+    COMMENT_STATEMENT,
 
     // 下面是表达式解析用到的 type，具体看文档
     ACTUAL_EXPRESSION,
