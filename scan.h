@@ -67,4 +67,6 @@ void unGetToken(FILE *fp, TokenKind kind);
 
 const char * getTokenKindStr(TokenKind kind);
 
+const char * getTokenKindType(TokenKind kind);
+
 #endif //MINIC_SCAN_H

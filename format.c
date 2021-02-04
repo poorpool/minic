@@ -9,6 +9,7 @@
 #include "format.h"
 #include "print.h"
 #include "expression.h"
+#include "show.h"
 
 extern int lineNumber;
 extern TokenKind tokenKind;
@@ -355,7 +356,7 @@ AstNode * processSentence(FILE *fp, AstNode *ret, TokenKind kind) {
             ret->son[5] = setAstNodeText(ret->son[5], getTokenKindStr(SEMI));
             tokenKind = getToken(fp);
             if (tokenKind != RP) {
-                ret->son[6] = actualExpression(fp, ret->son[2], tokenKind);
+                ret->son[6] = actualExpression(fp, ret->son[6], tokenKind);
             } else {
                 ret->son[6] = NULL;
             }
@@ -600,6 +601,9 @@ AstNode * processExtDefList(FILE *fp) {
 
 void format(FILE *fp, FILE *outfp) {
     root = processExtDefList(fp);
+#ifdef SHOW_AST
+    showNode(root, 0);
+#endif
     printNode(outfp, root, 0);
 }
 

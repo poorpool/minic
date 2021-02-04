@@ -15,9 +15,23 @@ void panic(const char *info) {
     exit(0);
 }
 
-int main() {
-    fp = fopen("../files/input.txt", "r");
-    outfp = fopen("../files/output.txt", "w");
+int main(int argc, char *argv[]) {
+    if (argc != 3) {
+        printf("Usage: %s input-file output-file\n", argv[0]);
+        return 0;
+    }
+    //fp = fopen("../files/input.c", "r");
+    //outfp = fopen("../files/output.c", "w");
+    fp = fopen(argv[1], "r");
+    outfp = fopen(argv[2], "w");
+    if (fp == NULL) {
+        printf("Read file failed!\n");
+        return 0;
+    }
+    if (outfp == NULL) {
+        printf("Output file failed!\n");
+        return 0;
+    }
     format(fp, outfp);
     fclose(fp);
     fclose(outfp);

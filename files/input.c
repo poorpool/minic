@@ -8,7 +8,7 @@ char __gg;
 // zhushi
 
 int
-getc(int a[1][2]);/*shushi
+getc(int a[1][2], char d, float ff);/*shushi
 zhushi*/
 int f();
 char fun         (int a, float b[2][2], char c) {int a;  char a;
@@ -63,7 +63,7 @@ int mknxt(){
 	// fff
 	/*
 	zhushi zghjus*/
-	i = 0;
+	i = 0xAB1d23;
 	nxt[0] = j = 0-1;
 	while(i<len){
 		if(j==0-1 || a[i]==a[j]){	nxt[i=i+1] = (j=j+1);/*hello*/}
@@ -74,6 +74,14 @@ int mknxt(){
 int getMin(){
 	int i, j, k;
 	i=0;j=1;k=0;
+	if (1) {
+	    c=d;
+	}
+	if (2) {
+	    b=c;
+	} else if (34-2>0) {
+	    a=b;
+	}
 	while(i<len && j<len && k<len){
 		int t;t=a[(i+k)%len]-a[(j+k)%len];
 		if(t==0){	k=k+1;}
@@ -86,8 +94,10 @@ int getMin(){
 	}
 	return min(i, j);
 }
+// thank you
 int getMax(){
 	int i, j, k;
+	float x, y, z;
 	i=0;j=1;k=0;
 	// ni hao
 	while(i<len && j<len && k<len){
@@ -112,4 +122,5 @@ int main(){
 		else{	cnt = len / cnt;}
 		printf( getMin()+1, cnt, getMax()+1, cnt);
 	}
+	a=b+c-d*e*f&&3;
 }

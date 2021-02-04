@@ -61,7 +61,7 @@ void getTextUntilNewLine(FILE *fp) {
     tokenText[tokenLen] = '\0';
 }
 
-TokenKind getToken(FILE *fp) {
+TokenKind gettoken(FILE *fp) {
     if (feof(fp)) {
         return ENDOFFILE;
     }
@@ -325,7 +325,23 @@ TokenKind getToken(FILE *fp) {
                     panic("Illegal float!");
                     return ERROR_TOKEN;
                 }
+                if (tokenLen > 1 && tokenText[1] == '0') {
+                    panic("Hex number cannot be float!");
+                    return ERROR_TOKEN;
+                }
                 ret = FLOAT_CONST;
+                tokenText[tokenLen++] = c;
+            } else if (c == 'x') {
+                if (tokenLen != 1 || tokenText[0] != '0') {
+                    panic("Confusing x!");
+                    return ERROR_TOKEN;
+                }
+                tokenText[tokenLen++] = c;
+            } else if ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')){
+                if (tokenLen <= 1 || tokenText[0] != '0') {
+                    panic("Confusing alpha after number!");
+                    return ERROR_TOKEN;
+                }
                 tokenText[tokenLen++] = c;
             } else {
                 ungetc(c, fp);
@@ -341,6 +357,15 @@ TokenKind getToken(FILE *fp) {
     }
 }
 
+TokenKind getToken(FILE *fp) {
+    TokenKind kind = gettoken(fp);
+#ifdef SHOW_TOKEN
+    printf("%-30s%s\n", getTokenKindType(kind), getTokenKindStr(kind));
+#endif
+    return kind;
+}
+
+
 void unGetTokenKindStr(FILE *fp, const char * s) {
     ungetc(' ', fp);
     int len = strlen(s);
@@ -350,6 +375,9 @@ void unGetTokenKindStr(FILE *fp, const char * s) {
 }
 
 void unGetToken(FILE *fp, TokenKind kind) {
+#ifdef SHOW_TOKEN
+    printf("UNGET %-24s%s\n", getTokenKindType(kind), getTokenKindStr(kind));
+#endif
     switch (kind) {
         case ERROR_TOKEN:
         case ENDOFFILE:
@@ -457,6 +485,105 @@ const char * getTokenKindStr(TokenKind kind) {
             return "{";
         case RBRACE:
             return "}";
+        default:
+            return "";
+    }
+}
+
+const char * getTokenKindType(TokenKind kind) {
+    switch (kind) {
+        case ERROR_TOKEN:
+            return "error_token";
+        case ENDOFFILE:
+            return "eof";
+        case IDENT:
+            return "identifier";
+        case INT_CONST:
+            return "int value";
+        case FLOAT_CONST:
+            return "float value";
+        case CHAR_CONST:
+            return "char value";
+        case STRING:
+            return "string";
+        case LINE_COMMENT:
+            return "line comment";
+        case BLOCK_COMMENT:
+            return "block comment";
+        case INT:
+            return "int type";
+        case FLOAT:
+            return "float type";
+        case CHAR:
+            return "char type";
+        case IF:
+            return "if keyword";
+        case ELSE:
+            return "else keyword";
+        case EQUAL:
+            return "equal";
+        case LESS:
+            return "less";
+        case LEQ:
+            return "less or equal";
+        case GREAT:
+            return "great";
+        case GEQ:
+            return "great or equal";
+        case NEQ:
+            return "not equal";
+        case ASSIGN:
+            return "assign";
+        case LP:
+            return "left parenthesis";
+        case RP:
+            return "right parenthesis";
+        case SEMI:
+            return "semicolon";
+        case COMMA:
+            return "comma";
+        case PLUS:
+            return "plus";
+        case MINUS:
+            return "minus";
+        case TIME:
+            return "times";
+        case DIVIDE:
+            return "division";
+        case MOD:
+            return "mod";
+        case LOGIC_AND:
+            return "and";
+        case LOGIC_OR:
+            return "or";
+        case FOR:
+            return "for keyword";
+        case WHILE:
+            return "while keyword";
+        case RETURN:
+            return "return keyword";
+        case CONTINUE:
+            return "continue keyword";
+        case EXTERN:
+            return "extern keyword";
+        case STATIC:
+            return "static keyword";
+        case BREAK:
+            return "break keyword";
+        case SHARP:
+            return "sharp";
+        case INCLUDE:
+            return "include keyword";
+        case DEFINE:
+            return "define keyword";
+        case LBRACKET:
+            return "left bracket";
+        case RBRACKET:
+            return "right bracket";
+        case LBRACE:
+            return "left brace";
+        case RBRACE:
+            return "right brace";
         default:
             return "";
     }
